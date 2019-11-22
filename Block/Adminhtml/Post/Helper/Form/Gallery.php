@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -90,11 +90,11 @@ class Gallery extends \Magento\Framework\View\Element\AbstractBlock
      */
     public function getImages()
     {
-        $result = array();
+        $result = [];
         $gallery = $this->registry->registry('current_model')->getGalleryImages();
 
         if (count($gallery)) {
-            $result['images'] = array();
+            $result['images'] = [];
             $position = 1;
             foreach ($gallery as $image) {
                 $result['images'][] = [
@@ -118,7 +118,20 @@ class Gallery extends \Magento\Framework\View\Element\AbstractBlock
      */
     public function getContentHtml()
     {
-        $content = $this->getChildBlock('content')
+        $content = $this->getChildBlock('content');
+        if (!$content) {
+            $content = $this->getLayout()->createBlock(
+                \Magefan\Blog\Block\Adminhtml\Post\Helper\Form\Gallery\Content::class,
+                '',
+                [
+                    'config' => [
+                        'parentComponent' => 'blog_post_form.blog_post_form.block_gallery.block_gallery'
+                    ]
+                ]
+            );
+        }
+
+        $content
             ->setId($this->getHtmlId() . '_content')
             ->setElement($this)
             ->setFormName($this->formName);

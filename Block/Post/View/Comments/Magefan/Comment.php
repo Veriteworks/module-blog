@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -9,6 +9,8 @@
 namespace Magefan\Blog\Block\Post\View\Comments\Magefan;
 
 use Magento\Store\Model\ScopeInterface;
+use \Magento\Framework\View\Element\Template;
+use \Magento\Framework\DataObject\IdentityInterface;
 
 /**
  * Magefan comment block
@@ -16,7 +18,7 @@ use Magento\Store\Model\ScopeInterface;
  * @method string getComment()
  * @method $this setComment(\Magefan\Blog\Model\Comment $comment)
  */
-class Comment extends \Magento\Framework\View\Element\Template
+class Comment extends Template implements IdentityInterface
 {
     /**
      * @var array
@@ -28,6 +30,16 @@ class Comment extends \Magento\Framework\View\Element\Template
      * @var string
      */
     protected $_template = 'Magefan_Blog::post/view/comments/magefan/comment.phtml';
+
+    /**
+     * Retrieve identities
+     *
+     * @return string
+     */
+    public function getIdentities()
+    {
+        return $this->getComment()->getIdentities();
+    }
 
     /**
      * Retrieve sub-comments collection or empty array
@@ -43,7 +55,8 @@ class Comment extends \Magento\Framework\View\Element\Template
                 $this->repliesCollection[$cId] = $this->getComment()->getChildComments()
                     ->addActiveFilter()
                     /*->setPageSize($this->getNumberOfReplies())*/
-                    ->setOrder('creation_time', 'DESC');
+                    //->setOrder('creation_time', 'DESC'); old sorting
+                      ->setOrder('creation_time', 'ASC');
             }
 
             return $this->repliesCollection[$cId];
@@ -60,9 +73,21 @@ class Comment extends \Magento\Framework\View\Element\Template
     public function getNumberOfReplies()
     {
         return $this->_scopeConfig->getValue(
-            \Magefan\Blog\Helper\Config::NUMBER_OF_REPLIES,
+            \Magefan\Blog\Model\Config::NUMBER_OF_REPLIES,
             ScopeInterface::SCOPE_STORE
         );
     }
 
+    /**
+     * @return mixed
+     */
+    public function getPublishDate()
+    {
+        $dateFormat = $this->_scopeConfig->getValue(
+            'mfblog/post_view/comments/format_date',
+            \Magento\Store\Model\ScopeInterface::SCOPE_STORE
+        );
+
+        return $this->getComment()->getPublishDate($dateFormat);
+    }
 }

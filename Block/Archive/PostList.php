@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -56,14 +56,17 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
         $title = $this->_getTitle();
         $this->_addBreadcrumbs($title, 'blog_search');
         $this->pageConfig->getTitle()->set($title);
-        $this->pageConfig->addRemotePageAsset(
-            $this->_url->getUrl(
-                $this->getYear() . '-' . str_pad($this->getMonth(), 2, '0', STR_PAD_LEFT),
-                \Magefan\Blog\Model\Url::CONTROLLER_ARCHIVE
-            ),
-            'canonical',
-            ['attributes' => ['rel' => 'canonical']]
-        );
+
+        if ($this->config->getDisplayCanonicalTag(\Magefan\Blog\Model\Config::CANONICAL_PAGE_TYPE_ARCHIVE)) {
+            $this->pageConfig->addRemotePageAsset(
+                $this->_url->getUrl(
+                    $this->getYear() . '-' . str_pad($this->getMonth(), 2, '0', STR_PAD_LEFT),
+                    \Magefan\Blog\Model\Url::CONTROLLER_ARCHIVE
+                ),
+                'canonical',
+                ['attributes' => ['rel' => 'canonical']]
+            );
+        }
         $this->pageConfig->setRobots('NOINDEX,FOLLOW');
 
         return parent::_prepareLayout();
@@ -78,8 +81,8 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
         $time = strtotime($this->getYear().'-'.$this->getMonth().'-01');
         return sprintf(
             __('Monthly Archives: %s %s'),
-            __(date('F', $time)), date('Y', $time)
+            __(date('F', $time)),
+            date('Y', $time)
         );
     }
-
 }

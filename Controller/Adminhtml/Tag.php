@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -23,17 +23,23 @@ class Tag extends Actions
      * Allowed Key
      * @var string
      */
-    protected $_allowedKey      = 'Magefan_Blog::post';
+    protected $_allowedKey      = 'Magefan_Blog::tag';
 
     /**
      * Model class name
      * @var string
      */
-    protected $_modelClass      = 'Magefan\Blog\Model\Tag';
+    protected $_modelClass      = \Magefan\Blog\Model\Tag::class;
 
     /**
      * Active menu key
      * @var string
      */
-    protected $_activeMenu      = 'Magefan_Blog::post';
+    protected $_activeMenu      = 'Magefan_Blog::tag';
+
+    /**
+     * Status field name
+     * @var string
+     */
+    protected $_statusField     = 'is_active';
 }

@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -48,16 +48,24 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
         if ($author = $this->getAuthor()) {
             $this->_addBreadcrumbs($author->getTitle(), 'blog_author');
             $this->pageConfig->addBodyClass('blog-author-' . $author->getIdentifier());
-            $this->pageConfig->getTitle()->set($author->getTitle());
-            $this->pageConfig->addRemotePageAsset(
-                $author->getAuthorUrl(),
-                'canonical',
-                ['attributes' => ['rel' => 'canonical']]
-            );
-            $this->pageConfig->setRobots('NOINDEX,FOLLOW');
+            $this->pageConfig->getTitle()->set($author->getMetaTitle());
+            $this->pageConfig->setKeywords($author->getMetaKeywords());
+            $this->pageConfig->setDescription($author->getMetaDescription());
+
+            if ($this->config->getDisplayCanonicalTag(\Magefan\Blog\Model\Config::CANONICAL_PAGE_TYPE_AUTHOR)) {
+                $this->pageConfig->addRemotePageAsset(
+                    $author->getAuthorUrl(),
+                    'canonical',
+                    ['attributes' => ['rel' => 'canonical']]
+                );
+            }
+            $page = $this->_request->getParam(\Magefan\Blog\Block\Post\PostList\Toolbar::PAGE_PARM_NAME);
+            if ($page < 2) {
+                $robots = $this->config->getAuthorRobots();
+                $this->pageConfig->setRobots($robots);
+            }
         }
 
         return parent::_prepareLayout();
     }
-
 }

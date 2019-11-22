@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -11,6 +11,8 @@ namespace Magefan\Blog\Block\Category;
 use Magento\Store\Model\ScopeInterface;
 
 /**
+ * DEPRECATED !!!!
+ *
  * Blog category view
  */
 class View extends \Magefan\Blog\Block\Post\PostList
@@ -52,11 +54,14 @@ class View extends \Magefan\Blog\Block\Post\PostList
             $this->pageConfig->getTitle()->set($category->getMetaTitle());
             $this->pageConfig->setKeywords($category->getMetaKeywords());
             $this->pageConfig->setDescription($category->getMetaDescription());
-            $this->pageConfig->addRemotePageAsset(
-                $category->getCanonicalUrl(),
-                'canonical',
-                ['attributes' => ['rel' => 'canonical']]
-            );
+
+            if ($this->config->getDisplayCanonicalTag(\Magefan\Blog\Model\Config::CANONICAL_PAGE_TYPE_CATEGORY)) {
+                $this->pageConfig->addRemotePageAsset(
+                    $category->getCanonicalUrl(),
+                    'canonical',
+                    ['attributes' => ['rel' => 'canonical']]
+                );
+            }
 
             $pageMainTitle = $this->getLayout()->getBlock('page.main.title');
             if ($pageMainTitle) {
@@ -97,10 +102,20 @@ class View extends \Magefan\Blog\Block\Post\PostList
             }
 
             $category = $this->getCategory();
-            $breadcrumbsBlock->addCrumb('blog_category',[
+            $breadcrumbsBlock->addCrumb('blog_category', [
                 'label' => $category->getTitle(),
                 'title' => $category->getTitle()
             ]);
         }
+    }
+    
+    /**
+     * Retrieve identities
+     *
+     * @return string
+     */
+    public function getIdentities()
+    {
+        return $this->getCategory()->getIdentities();
     }
 }

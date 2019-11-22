@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -54,7 +54,6 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
         \Magento\Framework\Model\ResourceModel\Db\AbstractDb $resource = null
     ) {
         parent::__construct($entityFactory, $logger, $fetchStrategy, $eventManager, $connection, $resource);
-
         $this->_date = $date;
         $this->_storeManager = $storeManager;
     }
@@ -68,7 +67,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
     protected function _construct()
     {
         parent::_construct();
-        $this->_init('Magefan\Blog\Model\Post', 'Magefan\Blog\Model\ResourceModel\Post');
+        $this->_init(\Magefan\Blog\Model\Post::class, \Magefan\Blog\Model\ResourceModel\Post::class);
         $this->_map['fields']['post_id'] = 'main_table.post_id';
         $this->_map['fields']['store'] = 'store_table.store_id';
         $this->_map['fields']['category'] = 'category_table.category_id';
@@ -84,12 +83,40 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
      */
     public function addFieldToFilter($field, $condition = null)
     {
+        /* NEED TO IMPROVE THIS CODE */
+        if (is_array($field) && count($field) > 1) {
+            return parent::addFieldToFilter($field, $condition);
+        }
+
+        if (is_array($field) && count($field) == 1) {
+            $field = $field[0];
+            if (isset($condition[0])) {
+                $condition = $condition[0];
+            }
+        }
+        /* END NEED TO IMPROVE */
+
         if ($field === 'store_id' || $field === 'store_ids') {
             return $this->addStoreFilter($condition);
         }
 
-        if ($field === 'category' || $field === 'categories') {
+        if ($field === 'category' || $field === 'categories' || $field === 'category_id') {
             return $this->addCategoryFilter($condition);
+        }
+
+        if ($field === 'tag' || $field === 'tag_id') {
+            return $this->addTagFilter($condition);
+        }
+
+        if ($field === 'author' || $field === 'author_id') {
+            return $this->addAuthorFilter($condition);
+        }
+
+        if ($field === 'search') {
+            if (is_array($condition)) {
+                $condition = array_shift($condition);
+            }
+            return $this->addSearchFilter($condition);
         }
 
         return parent::addFieldToFilter($field, $condition);
@@ -127,8 +154,45 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
             }
 
             $this->addFilter('store', ['in' => $store], 'public');
+            $this->setFlag('store_filter_added', 1);
         }
         return $this;
+    }
+    
+    /**
+     * Add "include in recent" filter to collection
+     * @return $this
+     */
+    public function addRecentFilter()
+    {
+        return $this->addFieldToFilter('include_in_recent', 1);
+    }
+    
+    /**
+     * Add posts filter to collection
+     * @param array|int|string  $category
+     * @return $this
+     */
+    public function addPostsFilter($postIds)
+    {
+        if (!is_array($postIds)) {
+            $postIds = explode(',', $postIds);
+            foreach ($postIds as $key => $id) {
+                $id = trim($id);
+                if (!$id) {
+                    unset($postIds[$key]);
+                }
+            }
+        }
+
+        if (!count($postIds)) {
+            $postIds = [0];
+        }
+
+        $this->addFieldToFilter(
+            'post_id',
+            ['in' => $postIds]
+        );
     }
 
     /**
@@ -150,7 +214,25 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
                 }
             }
 
+            $connection = $this->getConnection();
+            $tableName = $this->getTable('magefan_blog_category');
+            foreach ($categories as $k => $id) {
+                if (!is_numeric($id)) {
+                    $select = $connection->select()
+                        ->from(['t' => $tableName], 'category_id')
+                        ->where('t.identifier = ?', $id);
+
+                    $id = $connection->fetchOne($select);
+                    if (!$id) {
+                        $id = 0;
+                    }
+
+                    $categories[$k] = $id;
+                }
+            }
+
             $this->addFilter('category', ['in' => $categories], 'public');
+            $this->setFlag('category_filter_added', 1);
         }
         return $this;
     }
@@ -176,20 +258,75 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
      */
     public function addSearchFilter($term)
     {
-        $this->addFieldToFilter(
-            ['title', 'content_heading', 'content'],
-            [
-                ['like' => '%' . $term . '%'],
-                ['like' => '%' . $term . '%'],
-                ['like' => '% ' . $term . ' %']
-            ]
-        );
+        $tagPostIds = [];
+        $connection = $this->getConnection();
+        $select = $connection->select()
+            ->from(
+                ['p' => $this->getTable('magefan_blog_post')],
+                ['post_id']
+            )->joinInner(
+                ['pt' => $this->getTable('magefan_blog_post_tag')],
+                'p.post_id = pt.post_id',
+                ['']
+            )->joinInner(
+                ['t' => $this->getTable('magefan_blog_tag')],
+                't.tag_id = pt.tag_id',
+                ['tag_title' => 'title']
+            )->where('t.title LIKE ?', '%' . $term . '%');
+
+        foreach ($connection->fetchAll($select) as $item) {
+            $tagPostIds[] = (int)$item['post_id'];
+        }
+
+        $tagPostIds = array_unique($tagPostIds);
+
+        if (count($tagPostIds)) {
+            $this->addFieldToFilter(
+                ['title', 'short_content', 'content', 'post_id'],
+                [
+                    ['like' => '%' . $term . '%'],
+                    ['like' => '%' . $term . '%'],
+                    ['like' => '%' . $term . '%'],
+                    ['in' => $tagPostIds]
+                ]
+            );
+
+            $this->addExpressionFieldToSelect(
+                'search_rate',
+                '(0
+                  + FORMAT(MATCH (title, meta_keywords, meta_description, identifier, content) AGAINST ("{{term}}"), 4) 
+                  + IF(main_table.post_id IN ({{tagPostIds}}), "1", "0"))',
+                [
+                    'term' => $this->getConnection()->quote($term),
+                    'tagPostIds' => $this->getConnection()->quote($tagPostIds)
+                ]
+            );
+        } else {
+            $this->addFieldToFilter(
+                ['title', 'short_content', 'content'],
+                [
+                    ['like' => '%' . $term . '%'],
+                    ['like' => '%' . $term . '%'],
+                    ['like' => '%' . $term . '%']
+                ]
+            );
+
+            $this->addExpressionFieldToSelect(
+                'search_rate',
+                '(0
+                  + FORMAT(MATCH (title, meta_keywords, meta_description, identifier, content) AGAINST ("{{term}}"), 4))',
+                [
+                    'term' => $this->getConnection()->quote($term)
+                ]
+            );
+        }
+
         return $this;
     }
 
     /**
      * Add tag filter to collection
-     * @param array|int|\Magefan\Blog\Model\Tag  $tag
+     * @param array|int|string|\Magefan\Blog\Model\Tag  $tag
      * @return $this
      */
     public function addTagFilter($tag)
@@ -203,10 +340,29 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
                 $tag = [$tag];
             }
 
+            $connection = $this->getConnection();
+            $tableName = $this->getTable('magefan_blog_tag');
+            foreach ($tag as $k => $id) {
+                if (!is_numeric($id)) {
+                    $select = $connection->select()
+                        ->from(['t' => $tableName], 'tag_id')
+                        ->where('t.identifier = ?', $id);
+
+                    $id = $connection->fetchOne($select);
+                    if (!$id) {
+                        $id = 0;
+                    }
+
+                    $tag[$k] = $id;
+                }
+            }
+
             $this->addFilter('tag', ['in' => $tag], 'public');
+            $this->setFlag('tag_filter_added', 1);
         }
         return $this;
     }
+
 
     /**
      * Add author filter to collection
@@ -224,7 +380,22 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
                 $author = [$author];
             }
 
+            $objectManager = \Magento\Framework\App\ObjectManager::getInstance();
+            $authorModel = $objectManager->get(\Magefan\Blog\Api\AuthorInterface::class);
+
+            foreach ($author as $k => $id) {
+                if (!is_numeric($id)) {
+                    $id = $authorModel->checkIdentifier($id);
+
+                    if (!$id) {
+                        $id = 0;
+                    }
+                    $author[$k] = $id;
+                }
+            }
+
             $this->addFilter('author_id', ['in' => $author], 'public');
+            $this->setFlag('author_filter_added', 1);
         }
         return $this;
     }
@@ -236,8 +407,8 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
     public function addActiveFilter()
     {
         return $this
-            ->addFieldToFilter('is_active', 1)
-            ->addFieldToFilter('publish_time', ['lteq' => $this->_date->gmtDate()]);
+            ->addFieldToFilter('main_table.is_active', 1)
+            ->addFieldToFilter('main_table.publish_time', ['lteq' => $this->_date->gmtDate()]);
     }
 
     /**
@@ -319,7 +490,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
                 $result = $connection->fetchAll($select);
                 if ($result) {
                     $data = [];
-                    foreach($result as $item) {
+                    foreach ($result as $item) {
                         $data[$item['post_id']][] = $item[$key . '_id'];
                     }
 
@@ -344,12 +515,24 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
      */
     protected function _renderFiltersBefore()
     {
-        foreach(['store', 'category', 'tag'] as $key) {
+        foreach (['store', 'category', 'tag', 'author'] as $key) {
+
             if ($this->getFilter($key)) {
+
+                $joinOptions = new \Magento\Framework\DataObject;
+                $joinOptions->setData([
+                    'key' => $key,
+                    'fields' => [],
+                    'fields' => [],
+                ]);
+                $this->_eventManager->dispatch(
+                    'mfblog_post_collection_render_filter_join',
+                    ['join_options' => $joinOptions]
+                );
                 $this->getSelect()->join(
                     [$key.'_table' => $this->getTable('magefan_blog_post_'.$key)],
                     'main_table.post_id = '.$key.'_table.post_id',
-                    []
+                    $joinOptions->getData('fields')
                 )->group(
                     'main_table.post_id'
                 );
@@ -358,4 +541,20 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
         parent::_renderFiltersBefore();
     }
 
+    /**
+     * Add select order
+     *
+     * @param   string $field
+     * @param   string $direction
+     * @return  $this
+     */
+    public function setOrder($field, $direction = self::SORT_ORDER_DESC)
+    {
+        parent::setOrder($field, $direction);
+
+        if (is_string($field) && $field == 'publish_time') {
+            parent::setOrder('post_id', $direction);
+        }
+        return $this;
+    }
 }

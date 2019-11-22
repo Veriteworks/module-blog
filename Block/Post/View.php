@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -12,8 +12,18 @@ use Magento\Store\Model\ScopeInterface;
 /**
  * Blog post view
  */
-class View extends AbstractPost
+class View extends AbstractPost implements \Magento\Framework\DataObject\IdentityInterface
 {
+    /**
+     * Retrieve identities
+     *
+     * @return string
+     */
+    public function getIdentities()
+    {
+        return $this->getPost()->getIdentities();
+    }
+
     /**
      * Preparing global layout
      *
@@ -28,11 +38,14 @@ class View extends AbstractPost
             $this->pageConfig->getTitle()->set($post->getMetaTitle());
             $this->pageConfig->setKeywords($post->getMetaKeywords());
             $this->pageConfig->setDescription($post->getMetaDescription());
-            $this->pageConfig->addRemotePageAsset(
-                $post->getCanonicalUrl(),
-                'canonical',
-                ['attributes' => ['rel' => 'canonical']]
-            );
+
+            if ($this->config->getDisplayCanonicalTag(\Magefan\Blog\Model\Config::CANONICAL_PAGE_TYPE_POST)) {
+                $this->pageConfig->addRemotePageAsset(
+                    $post->getCanonicalUrl(),
+                    'canonical',
+                    ['attributes' => ['rel' => 'canonical']]
+                );
+            }
 
             $pageMainTitle = $this->getLayout()->getBlock('page.main.title');
             if ($pageMainTitle) {
@@ -86,7 +99,7 @@ class View extends AbstractPost
 
             $parentCategories = [];
             $parentCategory = $this->getPost()->getParentCategory();
-            while ($parentCategory ) {
+            while ($parentCategory) {
                 $parentCategories[] = $parentCategory;
                 $parentCategory = $parentCategory->getParentCategory();
             }
@@ -106,5 +119,4 @@ class View extends AbstractPost
             ]);
         }
     }
-
 }

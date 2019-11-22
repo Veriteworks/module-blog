@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -15,20 +15,19 @@ class Preview extends \Magefan\Blog\Controller\Adminhtml\Post
 {
     public function execute()
     {
-    	try {
+        try {
             $post = $this->_getModel();
             if (!$post->getId()) {
                 throw new \Exception("Item is not longer exist.", 1);
             }
 
-            $previewUrl = $this->_objectManager->get('\Magefan\Blog\Model\PreviewUrl');
+            $previewUrl = $this->_objectManager->get(\Magefan\Blog\Model\PreviewUrl::class);
             $redirectUrl = $previewUrl->getUrl(
                 $post,
                 $previewUrl::CONTROLLER_POST
             );
 
             $this->getResponse()->setRedirect($redirectUrl);
-
         } catch (\Exception $e) {
             $this->messageManager->addException(
                 $e,

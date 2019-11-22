@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -9,6 +9,7 @@
 namespace Magefan\Blog\Model;
 
 use Magefan\Blog\Model\Url;
+use Magento\Framework\DataObject\IdentityInterface;
 
 /**
  * Category model
@@ -21,13 +22,23 @@ use Magefan\Blog\Model\Url;
  * @method $this setTitle(string $value)
  * @method string getMetaKeywords()
  * @method $this setMetaKeywords(string $value)
- * @method string getMetaDescription()
  * @method $this setMetaDescription(string $value)
  * @method string getIdentifier()
  * @method $this setIdentifier(string $value)
+ * @method $this setUrlKey(string $value)
+ * @method string getUrlKey()
+ * @method $this setMetaTitle(string $value)
+ * @method string getPath()
+ * @method $this setPath($value)
  */
-class Category extends \Magento\Framework\Model\AbstractModel
+class Category extends \Magento\Framework\Model\AbstractModel implements IdentityInterface
 {
+
+    /**
+     * blog cache category
+     */
+    const CACHE_TAG = 'mfb_c';
+
     /**
      * Category's Statuses
      */
@@ -63,7 +74,7 @@ class Category extends \Magento\Framework\Model\AbstractModel
     /**
      * @var array
      */
-    static private $loadedCategoriesRepository = [];
+    private static $loadedCategoriesRepository = [];
 
     /**
      * @var string
@@ -101,8 +112,24 @@ class Category extends \Magento\Framework\Model\AbstractModel
      */
     protected function _construct()
     {
-        $this->_init('Magefan\Blog\Model\ResourceModel\Category');
+        $this->_init(\Magefan\Blog\Model\ResourceModel\Category::class);
         $this->controllerName = URL::CONTROLLER_CATEGORY;
+    }
+
+    /**
+     * Retrieve identities
+     *
+     * @return array
+     */
+    public function getIdentities()
+    {
+        $identities = [];
+
+        if ($this->getId()) {
+            $identities[] = self::CACHE_TAG . '_' . $this->getId();
+        }
+
+        return $identities;
     }
 
     /**
@@ -132,7 +159,9 @@ class Category extends \Magento\Framework\Model\AbstractModel
     {
         if (!isset(self::$loadedCategoriesRepository[$categoryId])) {
             $category = clone $this;
+            $category->unsetData();
             $category->load($categoryId);
+            $categoryId = $category->getId();
         }
 
         return self::$loadedCategoriesRepository[$categoryId];
@@ -197,7 +226,8 @@ class Category extends \Magento\Framework\Model\AbstractModel
     {
         $k = 'parent_ids';
         if (!$this->hasData($k)) {
-            $this->setData($k,
+            $this->setData(
+                $k,
                 $this->getPath() ? explode('/', $this->getPath()) : []
             );
         }
@@ -257,29 +287,33 @@ class Category extends \Magento\Framework\Model\AbstractModel
 
     /**
      * Retrieve children category ids
+     * @param  bool  $grandchildren
      * @return array
      */
-    public function getChildrenIds()
+    public function getChildrenIds($grandchildren = true)
     {
         $k = 'children_ids';
         if (!$this->hasData($k)) {
-
             $categories = \Magento\Framework\App\ObjectManager::getInstance()
                 ->create($this->_collectionName);
 
-            $ids = [];
-            foreach($categories as $category) {
+            $allIds = $ids = [];
+            foreach ($categories as $category) {
                 if ($category->isParent($this)) {
-                    $ids[] = $category->getId();
+                    $allIds[] = $category->getId();
+                    if ($category->getLevel() == $this->getLevel() + 1) {
+                        $ids[] = $category->getId();
+                    }
                 }
             }
 
-            $this->setData($k,
-                $ids
-            );
+            $this->setData('all_' . $k, $allIds);
+            $this->setData($k, $ids);
         }
 
-        return $this->getData($k);
+        return $this->getData(
+            ($grandchildren ? 'all_' : '') . $k
+        );
     }
 
     /**
@@ -307,7 +341,7 @@ class Category extends \Magento\Framework\Model\AbstractModel
      */
     public function getUrl()
     {
-        return $this->_url->getUrlPath($this->getIdentifier(), $this->controllerName);
+        return $this->_url->getUrlPath($this, $this->controllerName);
     }
 
     /**
@@ -316,7 +350,13 @@ class Category extends \Magento\Framework\Model\AbstractModel
      */
     public function getCategoryUrl()
     {
-        return $this->_url->getUrl($this, $this->controllerName);
+        if (!$this->hasData('category_url')) {
+            $url = $this->_url->getUrl($this, $this->controllerName);
+            $this->setData('category_url', $url);
+        }
+
+        return $this->getData('category_url');
+
     }
 
     /**
@@ -367,7 +407,8 @@ class Category extends \Magento\Framework\Model\AbstractModel
      */
     public function isVisibleOnStore($storeId)
     {
-        return $this->getIsActive() && array_intersect([0, $storeId], $this->getStoreIds());
+        return $this->getIsActive()
+            && (null === $storeId || array_intersect([0, $storeId], $this->getStoreIds()));
     }
 
     /**
@@ -379,7 +420,6 @@ class Category extends \Magento\Framework\Model\AbstractModel
     {
         $key = 'posts_count';
         if (!$this->hasData($key)) {
-
             $posts = $this->postCollectionFactory->create()
                 ->addActiveFilter()
                 ->addStoreFilter($this->getStoreId())
@@ -395,22 +435,52 @@ class Category extends \Magento\Framework\Model\AbstractModel
      * Prepare all additional data
      * @param  string $format
      * @return self
+     * @deprecated replaced with getDynamicData
      */
     public function initDinamicData()
     {
         $keys = [
             'meta_description',
             'meta_title',
+            'category_url',
         ];
 
         foreach ($keys as $key) {
-            $method = 'get' . str_replace('_', '',
+            $method = 'get' . str_replace(
+                '_',
+                '',
                 ucwords($key, '_')
             );
             $this->$method();
         }
 
         return $this;
+    }
+
+    /**
+     * Prepare all additional data
+     * @return array
+     */
+    public function getDynamicData()
+    {
+        $data = $this->getData();
+
+        $keys = [
+            'meta_description',
+            'meta_title',
+            'category_url',
+        ];
+
+        foreach ($keys as $key) {
+            $method = 'get' . str_replace(
+                '_',
+                '',
+                ucwords($key, '_')
+            );
+            $data[$key] = $this->$method();
+        }
+
+        return $data;
     }
 
     /**
@@ -427,5 +497,4 @@ class Category extends \Magento\Framework\Model\AbstractModel
 
         return $object->save();
     }
-
 }

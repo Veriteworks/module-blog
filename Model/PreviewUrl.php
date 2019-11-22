@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -13,7 +13,6 @@ namespace Magefan\Blog\Model;
  */
 class PreviewUrl extends Url
 {
-
     /**
      * Initialize dependencies.
      *
@@ -31,7 +30,6 @@ class PreviewUrl extends Url
         parent::__construct($registry, $url, $storeManager, $scopeConfig);
     }
 
-
     /**
      * Retrieve blog page preview url
      * @param  \Magento\Framework\Model\AbstractModel $object
@@ -47,11 +45,16 @@ class PreviewUrl extends Url
             $storeId = 0;
         }
 
+        if (0 == $storeId) {
+            $storeId = $this->_storeManager->getDefaultStoreView()->getId();
+        }
+
         $this->storeId = $storeId;
 
         $scope = $this->_storeManager->getStore($this->storeId);
         $url = $this->_url->setScope($scope)
-            ->getUrl('',
+            ->getUrl(
+                '',
                 [
                     '_direct'   => $this->getUrlPath($object->getIdentifier(), $controllerName),
                     'key'       => null,
@@ -61,8 +64,6 @@ class PreviewUrl extends Url
 
         $url .= (false === strpos($url, '?')) ? '?' : '&';
         $url .= 'secret=' . $object->getSecret();
-
         return $url;
     }
-
 }

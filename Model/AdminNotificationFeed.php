@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -63,7 +63,19 @@ class AdminNotificationFeed extends \Magento\AdminNotification\Model\Feed
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
         array $data = []
     ) {
-        parent::__construct($context, $registry, $backendConfig, $inboxFactory, $curlFactory, $deploymentConfig, $productMetadata, $urlBuilder, $resource, $resourceCollection, $data);
+        parent::__construct(
+            $context,
+            $registry,
+            $backendConfig,
+            $inboxFactory,
+            $curlFactory,
+            $deploymentConfig,
+            $productMetadata,
+            $urlBuilder,
+            $resource,
+            $resourceCollection,
+            $data
+        );
         $this->_backendAuthSession  = $backendAuthSession;
         $this->_moduleList = $moduleList;
         $this->_moduleManager = $moduleManager;
@@ -76,8 +88,8 @@ class AdminNotificationFeed extends \Magento\AdminNotification\Model\Feed
      */
     public function getFeedUrl()
     {
-        if (is_null($this->_feedUrl)) {
-            $this->_feedUrl = 'http://mage'.'fan'
+        if (null === $this->_feedUrl) {
+            $this->_feedUrl = 'https://mage'.'fan'
             .'.c'.'om/community/notifications'.'/'.'feed/';
         }
 
@@ -87,7 +99,7 @@ class AdminNotificationFeed extends \Magento\AdminNotification\Model\Feed
         $url = $this->_feedUrl . 'domain/' . urlencode($domain);
 
         $modulesParams = [];
-        foreach($this->getMagefanModules() as $key => $module) {
+        foreach ($this->getMagefanModules() as $key => $module) {
             $key = str_replace('Magefan_', '', $key);
             $modulesParams[] = $key . ',' . $module['setup_version'];
         }
@@ -95,7 +107,6 @@ class AdminNotificationFeed extends \Magento\AdminNotification\Model\Feed
         if (count($modulesParams)) {
             $url .= '/modules/'.base64_encode(implode(';', $modulesParams));
         }
-
         return $url;
     }
 
@@ -107,8 +118,8 @@ class AdminNotificationFeed extends \Magento\AdminNotification\Model\Feed
     protected function getMagefanModules()
     {
         $modules = [];
-        foreach($this->_moduleList->getAll() as $moduleName => $module) {
-            if ( strpos($moduleName, 'Magefan_') !== false && $this->_moduleManager->isEnabled($moduleName) ) {
+        foreach ($this->_moduleList->getAll() as $moduleName => $module) {
+            if (strpos($moduleName, 'Magefan_') !== false && $this->_moduleManager->isEnabled($moduleName)) {
                 $modules[$moduleName] = $module;
             }
         }
@@ -166,5 +177,4 @@ class AdminNotificationFeed extends \Magento\AdminNotification\Model\Feed
         $this->_cacheManager->save(time(), 'magefan_admin_notifications_lastcheck');
         return $this;
     }
-
 }

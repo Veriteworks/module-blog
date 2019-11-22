@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -29,7 +29,6 @@ class Url
     const CONTROLLER_SEARCH = 'search';
     const CONTROLLER_RSS = 'rss';
     const CONTROLLER_TAG = 'tag';
-
 
     /**
      * @var \Magento\Framework\Registry
@@ -115,7 +114,7 @@ class Url
      */
     public function getControllerName($route, $skip = true)
     {
-        foreach([
+        foreach ([
             self::CONTROLLER_POST,
             self::CONTROLLER_CATEGORY,
             self::CONTROLLER_ARCHIVE,
@@ -137,7 +136,9 @@ class Url
      */
     public function getBaseUrl()
     {
-        return $this->_url->getUrl($this->getRoute());
+        $url = $this->_url->getUrl($this->getBasePath());
+        $url = $this->trimSlash($url);
+        return $url;
     }
 
     /**
@@ -163,44 +164,55 @@ class Url
     public function getCanonicalUrl(\Magento\Framework\Model\AbstractModel $object)
     {
         $storeIds = $object->getStoreIds();
-        $useDefaultStore = false;
+        $useOtherStore = false;
         $currentStore = $this->_storeManager->getStore($object->getStoreId());
 
         if (is_array($storeIds)) {
-            if (0 == array_values($storeIds)[0]) {
-                $useDefaultStore = true;
-            } elseif (count($storeIds > 1)) {
+            if (in_array(0, $storeIds)) {
+                $useOtherStore = true;
+                $newStore = $currentStore->getGroup()->getDefaultStore();
+            } else {
                 foreach ($storeIds as $storeId) {
-                    if ($storeId != $currentStore->getId()) {
+                    //if ($storeId != $currentStore->getId()) {
                         $store = $this->_storeManager->getStore($storeId);
-                        if ($store->getGroupId() == $currentStore->getGroupId()) {
-                            $useDefaultStore = true;
+                        //if ($store->getGroupId() == $currentStore->getGroupId()) {
+                            $useOtherStore = true;
+                            $newStore = $store;
                             break;
-                        }
-                    }
+                        //}
+                    //}
                 }
             }
         }
 
         $storeChanged = false;
-        if ($useDefaultStore) {
-            $newStore = $currentStore->getGroup()->getDefaultStore();
+        if ($useOtherStore) {
             $origStore = $this->_url->getScope();
             if ($newStore->getId() != $origStore->getId()) {
                 $this->_url->setScope($newStore);
+                $this->setStoreId($newStore->getId());
                 $storeChanged = true;
             }
         }
 
-        $url = $this->getUrl($object->getIdentifier(), $object->getControllerName());
+        $url = $this->getUrl($object, $object->getControllerName());
 
         if ($storeChanged) {
             $this->_url->setScope($origStore);
+            $this->setStoreId($origStore->getId());
         }
 
         return $url;
     }
 
+    /**
+     * Retrieve blog base path
+     * @return string
+     */
+    public function getBasePath()
+    {
+        return $this->getRoute();
+    }
 
     /**
      * Retrieve blog url path
@@ -212,15 +224,20 @@ class Url
     {
         $identifier = $this->getExpandedItentifier($identifier);
         switch ($this->getPermalinkType()) {
-            case self::PERMALINK_TYPE_DEFAULT :
-                $path = $this->getRoute() . '/' . $this->getRoute($controllerName) . '/' . $identifier . ( $identifier ? '/' : '');
+            case self::PERMALINK_TYPE_DEFAULT:
+                $path = $this->getRoute() .
+                    '/' . $this->getRoute($controllerName) .
+                    '/' . $identifier . ( $identifier ? '/' : '');
                 break;
-            case self::PERMALINK_TYPE_SHORT :
+            case self::PERMALINK_TYPE_SHORT:
                 if ($controllerName == self::CONTROLLER_SEARCH
                     || $controllerName == self::CONTROLLER_AUTHOR
                     || $controllerName == self::CONTROLLER_TAG
+                    || $controllerName == self::CONTROLLER_RSS
                 ) {
-                    $path = $this->getRoute() . '/' . $this->getRoute($controllerName) . '/' . $identifier . ( $identifier ? '/' : '');
+                    $path = $this->getRoute() .
+                        '/' . $this->getRoute($controllerName) .
+                        '/' . $identifier . ( $identifier ? '/' : '');
                 } else {
                     $path = $this->getRoute() . '/' . $identifier . ( $identifier ? '/' : '');
                 }
@@ -228,6 +245,9 @@ class Url
         }
 
         $path = $this->addUrlSufix($path, $controllerName);
+        if (self::CONTROLLER_SEARCH != $controllerName) {
+            $path = $this->trimSlash($path);
+        }
 
         return $path;
     }
@@ -265,10 +285,15 @@ class Url
      */
     protected function addUrlSufix($url, $controllerName)
     {
-        if (in_array($controllerName, [self::CONTROLLER_POST, self::CONTROLLER_CATEGORY])) {
+        if (in_array($controllerName, [
+            self::CONTROLLER_POST,
+            self::CONTROLLER_CATEGORY,
+            self::CONTROLLER_AUTHOR,
+            self::CONTROLLER_TAG
+        ])) {
             if ($sufix = $this->getUrlSufix($controllerName)) {
                 $char = false;
-                foreach(['#', '?'] as $ch) {
+                foreach (['#', '?'] as $ch) {
                     if (false !== strpos($url, $ch)) {
                         $char = $ch;
                     }
@@ -283,6 +308,19 @@ class Url
             }
         }
 
+        return $url;
+    }
+
+    /**
+     * Remove slash from the end of URL
+     * @param $url
+     * @return string
+     */
+    protected function trimSlash($url)
+    {
+        if ($this->_getConfig('redirect_to_no_slash')) {
+            $url = trim($url, '/');
+        }
         return $url;
     }
 
@@ -327,6 +365,24 @@ class Url
         return $this->_storeManager->getStore()
             ->getBaseUrl(\Magento\Framework\UrlInterface::URL_TYPE_MEDIA) . $file;
     }
+    
+    /**
+     * @return int|null
+     */
+    public function getStoreId()
+    {
+        return $this->storeId;
+    }
+
+    /**
+     * @param $storeId
+     * @return $this
+     */
+    public function setStoreId($storeId)
+    {
+        $this->storeId = $storeId;
+        return $this;
+    }
 
     /**
      * Retrieve blog permalink config value
@@ -341,6 +397,4 @@ class Url
             $this->storeId
         );
     }
-
-
 }

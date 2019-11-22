@@ -1,8 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!--
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -15,7 +15,7 @@
             <item name="namespace" xsi:type="string">blog_new_tag_form</item>
         </item>
         <item name="buttons" xsi:type="array">
-            <item name="save" xsi:type="string">Magefan\Blog\Block\Adminhtml\Edit\CreateButton</item>
+            <item name="save" xsi:type="string">Magefan\Blog\Block\Adminhtml\Tag\CreateButton</item>
         </item>
         <item name="template" xsi:type="string">templates/form/collapsible</item>
         <item name="config" xsi:type="array">

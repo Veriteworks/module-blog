@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -65,12 +65,12 @@ class Tag extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
         }
 
         $identifierGenerator = \Magento\Framework\App\ObjectManager::getInstance()
-                ->create('Magefan\Blog\Model\ResourceModel\PageIdentifierGenerator');
+                ->create(\Magefan\Blog\Model\ResourceModel\PageIdentifierGenerator::class);
         $identifierGenerator->generate($object);
 
         if (!$this->isValidPageIdentifier($object)) {
             throw new \Magento\Framework\Exception\LocalizedException(
-                __('The tag URL key contains capital letters or disallowed symbols.')
+                __('The tag URL key contains disallowed symbols.')
             );
         }
 
@@ -93,7 +93,7 @@ class Tag extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
      */
     public function load(\Magento\Framework\Model\AbstractModel $object, $value, $field = null)
     {
-        if (!is_numeric($value) && is_null($field)) {
+        if (!is_numeric($value) && null === $field) {
             $field = 'identifier';
         }
 
@@ -101,7 +101,7 @@ class Tag extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
     }
 
     /**
-     *  Check whether category identifier is numeric
+     *  Check whether tag identifier is numeric
      *
      * @param \Magento\Framework\Model\AbstractModel $object
      * @return bool
@@ -112,14 +112,13 @@ class Tag extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
     }
 
     /**
-     *  Check whether category identifier is valid
+     *  Check whether tag identifier is valid
      *
      * @param \Magento\Framework\Model\AbstractModel $object
      * @return bool
      */
     protected function isValidPageIdentifier(\Magento\Framework\Model\AbstractModel $object)
     {
-        return preg_match('/^[a-z0-9][a-z0-9_\/-]+(\.[a-z0-9_-]+)?$/', $object->getData('identifier'));
+        return preg_match('/^([^?#<>@!&*()$%^\\+=,{}]+)?$/', $object->getData('identifier'));
     }
-
 }

@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -9,6 +9,7 @@
 namespace Magefan\Blog\Model;
 
 use Magefan\Blog\Model\Url;
+use Magento\Store\Model\ScopeInterface;
 
 /**
  * Post model
@@ -21,9 +22,7 @@ use Magefan\Blog\Model\Url;
  * @method $this setTitle(string $value)
  * @method string getMetaKeywords()
  * @method $this setMetaKeywords(string $value)
- * @method string getMetaDescription()
  * @method $this setMetaDescription(string $value)
- * @method string getIdentifier()
  * @method $this setIdentifier(string $value)
  * @method string getContent()
  * @method string getShortContent()
@@ -31,7 +30,7 @@ use Magefan\Blog\Model\Url;
  * @method string getContentHeading()
  * @method $this setContentHeading(string $value)
  */
-class Post extends \Magento\Framework\Model\AbstractModel
+class Post extends \Magento\Framework\Model\AbstractModel implements \Magento\Framework\DataObject\IdentityInterface
 {
     /**
      * Posts's Statuses
@@ -40,7 +39,12 @@ class Post extends \Magento\Framework\Model\AbstractModel
     const STATUS_DISABLED = 0;
 
     /**
-     * Gallery images separator
+     * blog cache post
+     */
+    const CACHE_TAG = 'mfb_p';
+
+    /**
+     * Gallery images separator constant
      */
     const GALLERY_IMAGES_SEPARATOR = ';';
 
@@ -86,7 +90,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
     protected $_url;
 
     /**
-     * @var \Magefan\Blog\Model\AuthorFactory
+     * @var \Magefan\Blog\Api\AuthorInterfaceFactory
      */
     protected $_authorFactory;
 
@@ -149,7 +153,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
      * @param \Magento\Cms\Model\Template\FilterProvider $filterProvider
      * @param \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig
      * @param \Magefan\Blog\Model\Url $url
-     * @param \Magefan\Blog\Model\AuthorFactory $authorFactory
+     * @param \Magefan\Blog\Api\AuthorInterfaceFactory $authorFactory
      * @param \Magefan\Blog\Model\ResourceModel\Category\CollectionFactory $categoryCollectionFactory
      * @param \Magefan\Blog\Model\ResourceModel\Tag\CollectionFactory $tagCollectionFactory
      * @param \Magefan\Blog\Model\ResourceModel\Comment\CollectionFactory $commentCollectionFactory
@@ -166,7 +170,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
         \Magento\Framework\App\Config\ScopeConfigInterface $scopeConfig,
         Url $url,
         \Magefan\Blog\Model\ImageFactory $imageFactory,
-        \Magefan\Blog\Model\AuthorFactory $authorFactory,
+        \Magefan\Blog\Api\AuthorInterfaceFactory $authorFactory,
         \Magefan\Blog\Model\ResourceModel\Category\CollectionFactory $categoryCollectionFactory,
         \Magefan\Blog\Model\ResourceModel\Tag\CollectionFactory $tagCollectionFactory,
         \Magefan\Blog\Model\ResourceModel\Comment\CollectionFactory $commentCollectionFactory,
@@ -197,8 +201,58 @@ class Post extends \Magento\Framework\Model\AbstractModel
      */
     protected function _construct()
     {
-        $this->_init('Magefan\Blog\Model\ResourceModel\Post');
+        $this->_init(\Magefan\Blog\Model\ResourceModel\Post::class);
         $this->controllerName = URL::CONTROLLER_POST;
+    }
+
+    /**
+     * Retrieve identities
+     *
+     * @return array
+     */
+    public function getIdentities()
+    {
+        $identities = [];
+
+        if ($this->getId()) {
+            $identities[] = self::CACHE_TAG . '_' . $this->getId();
+        }
+
+        $oldCategories = $this->getOrigData('categories');
+        if (!is_array($oldCategories)) {
+            $oldCategories = [];
+        }
+
+        $newCategories = $this->getData('categories');
+        if (!is_array($newCategories)) {
+            $newCategories = [];
+        }
+
+        if ($this->getData('is_active') && $this->getData('is_active') != $this->getOrigData('is_active')) {
+            $identities[] = self::CACHE_TAG . '_' . 0;
+        }
+
+        $isChangedCategories = count(array_diff($oldCategories, $newCategories));
+
+        if ($isChangedCategories) {
+            $changedCategories = array_unique(
+                array_merge($oldCategories, $newCategories)
+            );
+            foreach ($changedCategories as $categoryId) {
+                $identities[] = \Magefan\Blog\Model\Category::CACHE_TAG . '_' . $categoryId;
+            }
+        }
+        return $identities;
+    }
+
+    /**
+     * Retrieve block identifier
+     *
+     * @return string
+     */
+    public function getIdentifier()
+    {
+        return (string)$this->getData('identifier');
     }
 
     /**
@@ -258,7 +312,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
      */
     public function getUrl()
     {
-        return $this->_url->getUrlPath($this->getIdentifier(), $this->controllerName);
+        return $this->_url->getUrlPath($this, $this->controllerName);
     }
 
     /**
@@ -303,6 +357,24 @@ class Post extends \Magento\Framework\Model\AbstractModel
     }
 
     /**
+     * Retrieve featured link image url
+     * @return mixed
+     */
+    public function getFeaturedListImage()
+    {
+        if (!$this->hasData('featured_list_image')) {
+            if ($file = $this->getData('featured_list_img')) {
+                $image = $this->_url->getMediaUrl($file);
+            } else {
+                $image = false;
+            }
+            $this->setData('featured_list_image', $image);
+        }
+
+        return $this->getData('featured_list_image');
+    }
+
+    /**
      * Set media gallery images url
      *
      * @param array $images
@@ -310,7 +382,8 @@ class Post extends \Magento\Framework\Model\AbstractModel
      */
     public function setGalleryImages(array $images)
     {
-        $this->setData('media_gallery',
+        $this->setData(
+            'media_gallery',
             implode(
                 self::GALLERY_IMAGES_SEPARATOR,
                 $images
@@ -331,11 +404,14 @@ class Post extends \Magento\Framework\Model\AbstractModel
     public function getGalleryImages()
     {
         if (!$this->hasData('gallery_images')) {
-            $images = array();
-            $gallery = explode(
-                self::GALLERY_IMAGES_SEPARATOR,
-                $this->getData('media_gallery')
-            );
+            $images = [];
+            $gallery = $this->getData('media_gallery');
+            if ($gallery && !is_array($gallery)) {
+                $gallery = explode(
+                    self::GALLERY_IMAGES_SEPARATOR,
+                    $gallery
+                );
+            }
             if (!empty($gallery)) {
                 foreach ($gallery as $file) {
                     if ($file) {
@@ -382,7 +458,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
         $key = 'filtered_content';
         if (!$this->hasData($key)) {
             $content = $this->filterProvider->getPageFilter()->filter(
-                $this->getContent()
+                (string) $this->getContent() ?: ''
             );
             $this->setData($key, $content);
         }
@@ -391,52 +467,79 @@ class Post extends \Magento\Framework\Model\AbstractModel
 
     /**
      * Retrieve short filtered content
-     *
+     * @param  mixed $len
+     * @param  mixed $endСharacters
      * @return string
      */
-    public function getShortFilteredContent()
+    public function getShortFilteredContent($len = null, $endСharacters = null)
     {
-        $key = 'short_filtered_content';
+        $key = 'short_filtered_content' . $len;
         if (!$this->hasData($key)) {
             if ($this->getShortContent()) {
                 $content = $this->filterProvider->getPageFilter()->filter(
-                    $this->getShortContent()
+                    (string) $this->getShortContent() ?: ''
                 );
             } else {
                 $content = $this->getFilteredContent();
-                $pageBraker = '<!-- pagebreak -->';
 
-                $p = mb_strpos($content, $pageBraker);
-                if (!$p) {
-                    $p = (int)$this->scopeConfig->getValue(
-                        'mfblog/post_list/shortcotent_length',
-                        \Magento\Store\Model\ScopeInterface::SCOPE_STORE
-                    );
-                }
-
-                if ($p) {
-                    $content = mb_substr($content, 0, $p);
-                    try {
-                        libxml_use_internal_errors(true);
-                        $dom = new \DOMDocument();
-                        $dom->loadHTML('<?xml encoding="UTF-8">' . $content);
-                        $body = $dom->getElementsByTagName('body');
-                        if ($body && $body->length > 0) {
-                            $body = $body->item(0);
-                            $_content = new \DOMDocument;
-                            foreach ($body->childNodes as $child) {
-                                $_content->appendChild($_content->importNode($child, true));
-                            }
-                            $content = $_content->saveHTML();
-                        }
-                    } catch (\Exception $e) {
+                if (!$len) {
+                    $pageBraker = '<!-- pagebreak -->';
+                    $len = mb_strpos($content, $pageBraker);
+                    if (!$len) {
+                        $len = (int)$this->scopeConfig->getValue(
+                            'mfblog/post_list/shortcotent_length',
+                            ScopeInterface::SCOPE_STORE
+                        );
                     }
                 }
             }
+
+            if ($len) {
+                /* Do not cut words */
+                while ($len < strlen($content)
+                    && !in_array($content{$len}, [' ', '<', "\t", "\r", "\n"]) ) {
+                    $len++;
+                }
+
+                $content = mb_substr($content, 0, $len);
+                try {
+                    $previousLoaderState = libxml_disable_entity_loader(true);
+                    $previousErrorState = libxml_use_internal_errors(true);
+                    $dom = new \DOMDocument();
+                    $dom->loadHTML('<?xml encoding="UTF-8">' . $content);
+                    libxml_disable_entity_loader($previousLoaderState);
+                    libxml_use_internal_errors($previousErrorState);
+
+                    $body = $dom->getElementsByTagName('body');
+                    if ($body && $body->length > 0) {
+                        $body = $body->item(0);
+                        $_content = new \DOMDocument;
+                        foreach ($body->childNodes as $child) {
+                            $_content->appendChild($_content->importNode($child, true));
+                        }
+                        $content = $_content->saveHTML();
+                    }
+                } catch (\Exception $e) {
+                    /* Do nothing, it's OK */
+                }
+            }
+
+            if ($len && $endСharacters) {
+                $trimMask = " \t\n\r\0\x0B,.!?";
+                if ($p = strrpos($content, '</')) {
+                    $content = trim(substr($content, 0, $p), $trimMask)
+                        . $endСharacters
+                        . substr($content, $p);
+                } else {
+                    $content = trim($content, $trimMask)
+                        . $endСharacters;
+                }
+            }
+            
             $this->setData($key, $content);
         }
 
-        return $this->getData($key);;
+        return $this->getData($key);
     }
 
     /**
@@ -465,8 +568,8 @@ class Post extends \Magento\Framework\Model\AbstractModel
         }
 
         $desc = strip_tags($desc);
-        if (mb_strlen($desc) > 160) {
-            $desc = mb_substr($desc, 0, 160);
+        if (mb_strlen($desc) > 300) {
+            $desc = mb_substr($desc, 0, 300);
         }
 
         return trim($desc);
@@ -512,7 +615,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
     public function getOgType()
     {
         $type = $this->getData('og_type');
-        if (!$type)  {
+        if (!$type) {
             $type = 'article';
         }
 
@@ -526,7 +629,6 @@ class Post extends \Magento\Framework\Model\AbstractModel
     public function getOgImage()
     {
         if (!$this->hasData('og_image')) {
-
             if ($file = $this->getData('og_img')) {
                 $image = $this->_url->getMediaUrl($file);
             } else {
@@ -544,7 +646,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
      */
     public function getParentCategories()
     {
-        if (is_null($this->_parentCategories)) {
+        if (null === $this->_parentCategories) {
             $this->_parentCategories = $this->_categoryCollectionFactory->create()
                 ->addFieldToFilter('category_id', ['in' => $this->getCategories()])
                 ->addStoreFilter($this->getStoreId())
@@ -590,9 +692,10 @@ class Post extends \Magento\Framework\Model\AbstractModel
      */
     public function getRelatedTags()
     {
-        if (is_null($this->_relatedTags)) {
+        if (null === $this->_relatedTags) {
             $this->_relatedTags = $this->_tagCollectionFactory->create()
                 ->addFieldToFilter('tag_id', ['in' => $this->getTags()])
+                ->addActiveFilter()
                 ->setOrder('title');
         }
 
@@ -629,14 +732,21 @@ class Post extends \Magento\Framework\Model\AbstractModel
      */
     public function getCommentsCount()
     {
-        if (!$this->hasData('comments_count')) {
-            $comments = $this->_commentCollectionFactory->create()
-                ->addFieldToFilter('post_id', $this->getId())
-                ->addActiveFilter()
-                ->addFieldToFilter('parent_id', 0);
-            $this->setData('comments_count', (int)$comments->getSize());
+        $enableComments = $this->getEnableComments();
+        if ($enableComments || $enableComments === null) {
+            /*
+            if (!$this->hasData('comments_count')) {
+                $comments = $this->_commentCollectionFactory->create()
+                    ->addFieldToFilter('post_id', $this->getId())
+                    ->addActiveFilter()
+                    ->addFieldToFilter('parent_id', 0);
+                $this->setData('comments_count', (int)$comments->getSize());
+            }
+            */
+            return $this->getData('comments_count');
+        } else {
+            return 0;
         }
-        return $this->getData('comments_count');
     }
 
     /**
@@ -659,7 +769,6 @@ class Post extends \Magento\Framework\Model\AbstractModel
             );
             $this->setData('related_posts', $collection);
         }
-
         return $this->getData('related_posts');
     }
 
@@ -693,7 +802,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
 
     /**
      * Retrieve post author
-     * @return \Magefan\Blog\Model\Author | false
+     * @return \Magefan\Blog\Api\AuthorInterface | false
      */
     public function getAuthor()
     {
@@ -719,7 +828,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
     {
         return $this->getIsActive()
             && $this->getData('publish_time') <= $this->getResource()->getDate()->gmtDate()
-            && array_intersect([0, $storeId], $this->getStoreIds());
+            && (null === $storeId || array_intersect([0, $storeId], $this->getStoreIds()));
     }
 
     /**
@@ -736,12 +845,36 @@ class Post extends \Magento\Framework\Model\AbstractModel
      * @param  string $format
      * @return string
      */
-    public function getPublishDate($format = 'Y-m-d H:i:s')
+    public function getPublishDate($format = '')
     {
+        if (!$format) {
+            $format = $this->scopeConfig->getValue(
+                'mfblog/design/format_date',
+                ScopeInterface::SCOPE_STORE
+            );
+
+            if (!$format) {
+                $format = 'Y-m-d H:i:s';
+            }
+        }
+
         return \Magefan\Blog\Helper\Data::getTranslatedDate(
             $format,
             $this->getData('publish_time')
         );
+    }
+
+    /**
+     * Retrieve true if post publish date display is enabled
+     * @return bool
+     */
+    public function isPublishDateEnabled()
+    {
+        return (bool)$this->scopeConfig->getValue(
+            'mfblog/design/publication_date',
+            ScopeInterface::SCOPE_STORE
+        );
+        return true;
     }
 
     /**
@@ -775,6 +908,7 @@ class Post extends \Magento\Framework\Model\AbstractModel
      * Prepare all additional data
      * @param  string $format
      * @return self
+     * @deprecated replaced with getDynamicData
      */
     public function initDinamicData()
     {
@@ -793,13 +927,65 @@ class Post extends \Magento\Framework\Model\AbstractModel
         ];
 
         foreach ($keys as $key) {
-            $method = 'get' . str_replace('_', '',
+            $method = 'get' . str_replace(
+                '_',
+                '',
                 ucwords($key, '_')
             );
             $this->$method();
         }
 
         return $this;
+    }
+
+    /**
+     * Prepare all additional data
+     * @return array
+     */
+    public function getDynamicData()
+    {
+        $data = $this->getData();
+
+        $keys = [
+            'og_image',
+            'og_type',
+            'og_description',
+            'og_title',
+            'meta_description',
+            'meta_title',
+            'short_filtered_content',
+            'filtered_content',
+            'first_image',
+            'featured_image',
+            'post_url',
+        ];
+
+        foreach ($keys as $key) {
+            $method = 'get' . str_replace(
+                '_',
+                '',
+                ucwords($key, '_')
+            );
+            $data[$key] = $this->$method();
+        }
+
+        $tags = [];
+        foreach ($this->getRelatedTags() as $tag) {
+            $tags[] = $tag->getDynamicData();
+        }
+        $data['tags'] = $tags;
+
+        $categories = [];
+        foreach ($this->getParentCategories() as $category) {
+            $categories[] = $category->getDynamicData();
+        }
+        $data['categories'] = $categories;
+
+        if ($author = $this->getAuthor()) {
+            $data['author'] = $author->getDynamicData();
+        }
+
+        return $data;
     }
 
     /**
@@ -811,6 +997,10 @@ class Post extends \Magento\Framework\Model\AbstractModel
         $object = clone $this;
         $object
             ->unsetData('post_id')
+            ->unsetData('creation_time')
+            ->unsetData('update_time')
+            ->unsetData('publish_time')
+            ->unsetData('identifier')
             ->setTitle($object->getTitle() . ' (' . __('Duplicated') . ')')
             ->setData('is_active', 0);
 
@@ -845,4 +1035,12 @@ class Post extends \Magento\Framework\Model\AbstractModel
         return $this->getData('secret');
     }
 
+    /**
+     * Retrieve updated at time
+     * @return mixed
+     */
+    public function getUpdatedAt()
+    {
+        return $this->getData('update_time');
+    }
 }

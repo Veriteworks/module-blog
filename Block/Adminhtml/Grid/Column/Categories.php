@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -19,7 +19,7 @@ class Categories extends \Magento\Backend\Block\Widget\Grid\Column
     public function _construct()
     {
         parent::_construct();
-        $this->_rendererTypes['category'] = 'Magefan\Blog\Block\Adminhtml\Grid\Column\Render\Category';
-        $this->_filterTypes['category'] = 'Magefan\Blog\Block\Adminhtml\Grid\Column\Filter\Category';
+        $this->_rendererTypes['category'] = \Magefan\Blog\Block\Adminhtml\Grid\Column\Render\Category::class;
+        $this->_filterTypes['category'] = \Magefan\Blog\Block\Adminhtml\Grid\Column\Filter\Category::class;
     }
 }

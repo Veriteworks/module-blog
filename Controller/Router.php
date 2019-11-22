@@ -1,14 +1,15 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
 
 namespace Magefan\Blog\Controller;
 
-use \Magefan\Blog\Model\Url;
+use Magefan\Blog\Model\Url;
+
 /**
  * Blog Controller Router
  */
@@ -50,7 +51,7 @@ class Router implements \Magento\Framework\App\RouterInterface
     /**
      * Author factory
      *
-     * @var \Magefan\Blog\Model\AuthorFactory
+     * @var   \Magefan\Blog\Api\AuthorInterfaceFactory
      */
     protected $_authorFactory;
 
@@ -83,24 +84,9 @@ class Router implements \Magento\Framework\App\RouterInterface
     protected $_response;
 
     /**
-     * @var array
+     * @var array;
      */
-    protected $_postId;
-
-    /**
-     * @var array
-     */
-    protected $_categoryId;
-
-    /**
-     * @var int
-     */
-    protected $_authorId;
-
-    /**
-     * @var int
-     */
-    protected $_tagId;
+    protected $ids;
 
     /**
      * @param \Magento\Framework\App\ActionFactory $actionFactory
@@ -108,7 +94,7 @@ class Router implements \Magento\Framework\App\RouterInterface
      * @param \Magento\Framework\UrlInterface $url
      * @param \Magefan\Blog\Model\PostFactory $postFactory
      * @param \Magefan\Blog\Model\CategoryFactory $categoryFactory
-     * @param \Magefan\Blog\Model\AuthorFactory $authorFactory
+     * @param \Magefan\Blog\Api\AuthorInterfaceFactory  $authorFactory
      * @param \Magefan\Blog\Model\TagFactory $tagFactory
      * @param \Magefan\Blog\Model\Url $url
      * @param \Magento\Store\Model\StoreManagerInterface $storeManager
@@ -120,11 +106,12 @@ class Router implements \Magento\Framework\App\RouterInterface
         Url $url,
         \Magefan\Blog\Model\PostFactory $postFactory,
         \Magefan\Blog\Model\CategoryFactory $categoryFactory,
-        \Magefan\Blog\Model\AuthorFactory $authorFactory,
+        \Magefan\Blog\Api\AuthorInterfaceFactory $authorFactory,
         \Magefan\Blog\Model\TagFactory $tagFactory,
         \Magento\Store\Model\StoreManagerInterface $storeManager,
         \Magento\Framework\App\ResponseInterface $response
     ) {
+    
         $this->actionFactory = $actionFactory;
         $this->_eventManager = $eventManager;
         $this->_url = $url;
@@ -144,7 +131,9 @@ class Router implements \Magento\Framework\App\RouterInterface
      */
     public function match(\Magento\Framework\App\RequestInterface $request)
     {
+
         $_identifier = trim($request->getPathInfo(), '/');
+        $_identifier = urldecode($_identifier);
 
         $pathInfo = explode('/', $_identifier);
         $blogRoute = $this->_url->getRoute();
@@ -152,23 +141,26 @@ class Router implements \Magento\Framework\App\RouterInterface
         if ($pathInfo[0] != $blogRoute) {
             return;
         }
+
         unset($pathInfo[0]);
 
         if (!count($pathInfo)) {
             $request
-                ->setModuleName('blog')
+                ->setRouteName('blog')
                 ->setControllerName('index')
                 ->setActionName('index');
         } elseif ($pathInfo[1] == $this->_url->getRoute(Url::CONTROLLER_RSS)) {
-            $request
-                ->setModuleName('blog')
-                ->setControllerName(Url::CONTROLLER_RSS)
-                ->setActionName(isset($pathInfo[2]) ? $pathInfo[2] : 'index');
+            if (!isset($pathInfo[2]) || in_array($pathInfo[2], ['index', 'feed'])) {
+                $request
+                    ->setRouteName('blog')
+                    ->setControllerName(Url::CONTROLLER_RSS)
+                    ->setActionName('feed');
+            }
         } elseif ($pathInfo[1] == $this->_url->getRoute(Url::CONTROLLER_SEARCH)
             && !empty($pathInfo[2])
         ) {
             $request
-                ->setModuleName('blog')
+                ->setRouteName('blog')
                 ->setControllerName(Url::CONTROLLER_SEARCH)
                 ->setActionName('index')
                 ->setParam('q', $pathInfo[2]);
@@ -177,7 +169,7 @@ class Router implements \Magento\Framework\App\RouterInterface
             && ($authorId = $this->_getAuthorId($pathInfo[2]))
         ) {
             $request
-                ->setModuleName('blog')
+                ->setRouteName('blog')
                 ->setControllerName(Url::CONTROLLER_AUTHOR)
                 ->setActionName('view')
                 ->setParam('id', $authorId);
@@ -186,12 +178,11 @@ class Router implements \Magento\Framework\App\RouterInterface
             && $tagId = $this->_getTagId($pathInfo[2])
         ) {
             $request
-                ->setModuleName('blog')
+                ->setRouteName('blog')
                 ->setControllerName(Url::CONTROLLER_TAG)
                 ->setActionName('view')
                 ->setParam('id', $tagId);
         } else {
-
             $controllerName = null;
             if (Url::PERMALINK_TYPE_DEFAULT == $this->_url->getPermalinkType()) {
                 $controllerName = $this->_url->getControllerName($pathInfo[1]);
@@ -202,47 +193,44 @@ class Router implements \Magento\Framework\App\RouterInterface
             $pathInfoCount = count($pathInfo);
 
             if ($pathInfoCount == 1) {
-                if ( (!$controllerName || $controllerName == Url::CONTROLLER_ARCHIVE)
+                if ((!$controllerName || $controllerName == Url::CONTROLLER_ARCHIVE)
                     && $this->_isArchiveIdentifier($pathInfo[0])
                 ) {
                     $request
-                        ->setModuleName('blog')
+                        ->setRouteName('blog')
                         ->setControllerName(Url::CONTROLLER_ARCHIVE)
                         ->setActionName('view')
                         ->setParam('date', $pathInfo[0]);
-
-                } elseif ( (!$controllerName || $controllerName == Url::CONTROLLER_POST)
+                } elseif ((!$controllerName || $controllerName == Url::CONTROLLER_POST)
                     && $postId = $this->_getPostId($pathInfo[0])
                 ) {
                     $request
-                        ->setModuleName('blog')
+                        ->setRouteName('blog')
                         ->setControllerName(Url::CONTROLLER_POST)
                         ->setActionName('view')
                         ->setParam('id', $postId);
-
-                } elseif ( (!$controllerName || $controllerName == Url::CONTROLLER_CATEGORY)
+                } elseif ((!$controllerName || $controllerName == Url::CONTROLLER_CATEGORY)
                     && $categoryId = $this->_getCategoryId($pathInfo[0])
                 ) {
                     $request
-                        ->setModuleName('blog')
+                        ->setRouteName('blog')
                         ->setControllerName(Url::CONTROLLER_CATEGORY)
                         ->setActionName('view')
                         ->setParam('id', $categoryId);
                 }
             } elseif ($pathInfoCount > 1) {
-
                 $postId = 0;
                 $categoryId = 0;
                 $first = true;
                 $pathExist = true;
 
                 for ($i = $pathInfoCount - 1; $i >= 0; $i--) {
-                    if ( (!$controllerName || $controllerName == Url::CONTROLLER_POST)
+                    if ((!$controllerName || $controllerName == Url::CONTROLLER_POST)
                         && $first
                         && ($postId = $this->_getPostId($pathInfo[$i]))
                     ) {
                         //we have postId
-                    } elseif ( (!$controllerName || !$first || $controllerName == Url::CONTROLLER_CATEGORY)
+                    } elseif ((!$controllerName || !$first || $controllerName == Url::CONTROLLER_CATEGORY)
                         && ($cid = $this->_getCategoryId($pathInfo[$i], $first))
                     ) {
                         if (!$categoryId) {
@@ -257,12 +245,10 @@ class Router implements \Magento\Framework\App\RouterInterface
                         $first = false;
                     }
                 }
-
-
                 if ($pathExist) {
                     if ($postId) {
                         $request
-                            ->setModuleName('blog')
+                            ->setRouteName('blog')
                             ->setControllerName(Url::CONTROLLER_POST)
                             ->setActionName('view')
                             ->setParam('id', $postId);
@@ -271,18 +257,16 @@ class Router implements \Magento\Framework\App\RouterInterface
                         }
                     } elseif ($categoryId) {
                         $request
-                            ->setModuleName('blog')
+                            ->setRouteName('blog')
                             ->setControllerName(Url::CONTROLLER_CATEGORY)
                             ->setActionName('view')
                             ->setParam('id', $categoryId);
                     }
-
-                } elseif ( (!$controllerName || $controllerName == Url::CONTROLLER_POST)
+                } elseif ((!$controllerName || $controllerName == Url::CONTROLLER_POST)
                     && $postId = $this->_getPostId(implode('/', $pathInfo))
                 ) {
-
                     $request
-                        ->setModuleName('blog')
+                        ->setRouteName('blog')
                         ->setControllerName(Url::CONTROLLER_POST)
                         ->setActionName('view')
                         ->setParam('id', $postId);
@@ -306,7 +290,7 @@ class Router implements \Magento\Framework\App\RouterInterface
             $this->_response->setRedirect($condition->getRedirectUrl());
             $request->setDispatched(true);
             return $this->actionFactory->create(
-                'Magento\Framework\App\Action\Redirect',
+                \Magento\Framework\App\Action\Redirect::class,
                 ['request' => $request]
             );
         }
@@ -322,7 +306,7 @@ class Router implements \Magento\Framework\App\RouterInterface
         $request->setAlias(\Magento\Framework\Url::REWRITE_REQUEST_PATH_ALIAS, $_identifier);
 
         return $this->actionFactory->create(
-            'Magento\Framework\App\Action\Forward',
+            \Magento\Framework\App\Action\Forward::class,
             ['request' => $request]
         );
     }
@@ -334,22 +318,12 @@ class Router implements \Magento\Framework\App\RouterInterface
      */
     protected function _getPostId($identifier, $checkSufix = true)
     {
-        $key = $identifier . ($checkSufix ? '-checksufix' : '');
-        if (!isset($this->_postId[$key])) {
-            $sufix = $this->_url->getUrlSufix(Url::CONTROLLER_POST);
-            $trimmedIdentifier = $this->_url->trimSufix($identifier, $sufix);
-            if ($checkSufix && $sufix && $trimmedIdentifier == $identifier) { //if url without sufix
-                $this->_postId[$key] = 0;
-            } else {
-                $post = $this->_postFactory->create();
-                $this->_postId[$key] = $post->checkIdentifier(
-                    $trimmedIdentifier,
-                    $this->_storeManager->getStore()->getId()
-                );
-            }
-        }
-
-        return $this->_postId[$key];
+        return $this->getObjectId(
+            $this->_postFactory,
+            Url::CONTROLLER_POST,
+            $identifier,
+            $checkSufix
+        );
     }
 
     /**
@@ -359,58 +333,73 @@ class Router implements \Magento\Framework\App\RouterInterface
      */
     protected function _getCategoryId($identifier, $checkSufix = true)
     {
-        $key = $identifier . ($checkSufix ? '-checksufix' : '');
-        if (!isset($this->_categoryId[$key])) {
-            $sufix = $this->_url->getUrlSufix(Url::CONTROLLER_CATEGORY);
+        return $this->getObjectId(
+            $this->_categoryFactory,
+            Url::CONTROLLER_CATEGORY,
+            $identifier,
+            $checkSufix
+        );
+    }
+
+    /**
+     * Retrieve category id by identifier
+     * @param string $identifier
+     * @param bool $checkSufix
+     * @return int
+     */
+    protected function _getAuthorId($identifier, $checkSufix = true)
+    {
+        return $this->getObjectId(
+            $this->_authorFactory,
+            Url::CONTROLLER_AUTHOR,
+            $identifier,
+            $checkSufix
+        );
+    }
+
+    /**
+     * Retrieve tag id by identifier
+     * @param string $identifier
+     * @param bool $checkSufix
+     * @return int
+     */
+    protected function _getTagId($identifier, $checkSufix = true)
+    {
+        return $this->getObjectId(
+            $this->_tagFactory,
+            Url::CONTROLLER_TAG,
+            $identifier,
+            $checkSufix
+        );
+    }
+
+    /**
+     * @param $factory
+     * @param string $controllerName
+     * @param string $identifier
+     * @param bool $checkSufix
+     * @return mixed
+     */
+    protected function getObjectId($factory, $controllerName, $identifier, $checkSufix)
+    {
+        $key =  $controllerName . '-' .$identifier . ($checkSufix ? '-checksufix' : '');
+        if (!isset($this->ids[$key])) {
+            $sufix = $this->_url->getUrlSufix($controllerName);
 
             $trimmedIdentifier = $this->_url->trimSufix($identifier, $sufix);
 
             if ($checkSufix && $sufix && $trimmedIdentifier == $identifier) { //if url without sufix
-                $this->_categoryId[$key] = 0;
+                $this->ids[$key] = 0;
             } else {
-                $category = $this->_categoryFactory->create();
-                $this->_categoryId[$key] = $category->checkIdentifier(
+                $object = $factory->create();
+                $this->ids[$key] = $object->checkIdentifier(
                     $trimmedIdentifier,
                     $this->_storeManager->getStore()->getId()
                 );
             }
         }
 
-        return $this->_categoryId[$key];
-    }
-
-    /**
-     * Retrieve category id by identifier
-     * @param  string $identifier
-     * @return int
-     */
-    protected function _getAuthorId($identifier)
-    {
-        if (is_null($this->_authorId)) {
-            $author = $this->_authorFactory->create();
-            $this->_authorId = $author->checkIdentifier(
-                $identifier
-            );
-        }
-
-        return $this->_authorId;
-    }
-
-    /**
-     * Retrieve tag id by identifier
-     * @param  string $identifier
-     * @return int
-     */
-    protected function _getTagId($identifier)
-    {
-        if (is_null($this->_tagId)) {
-            $tag = $this->_tagFactory->create();
-            $this->_tagId = $tag->checkIdentifier(
-                $identifier
-            );
-        }
-
-        return $this->_tagId;
+        return $this->ids[$key];
     }
 
     /**
@@ -427,5 +416,4 @@ class Router implements \Magento\Framework\App\RouterInterface
             && is_numeric($info[0])
             && is_numeric($info[1]);
     }
-
 }

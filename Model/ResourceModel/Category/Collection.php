@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -54,7 +54,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
     protected function _construct()
     {
         parent::_construct();
-        $this->_init('Magefan\Blog\Model\Category', 'Magefan\Blog\Model\ResourceModel\Category');
+        $this->_init(\Magefan\Blog\Model\Category::class, \Magefan\Blog\Model\ResourceModel\Category::class);
         $this->_map['fields']['category_id'] = 'main_table.category_id';
         $this->_map['fields']['store'] = 'store_table.store_id';
     }
@@ -107,6 +107,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
             }
 
             $this->addFilter('store', ['in' => $store], 'public');
+            $this->setFlag('store_filter_added', 1);
         }
         return $this;
     }
@@ -211,7 +212,7 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
     {
         $childs = [];
         if (count($this)) {
-            foreach($this as $item) {
+            foreach ($this as $item) {
                 $childs[$item->getParentId()][] = $item;
             }
         }
@@ -242,10 +243,9 @@ class Collection extends \Magento\Framework\Model\ResourceModel\Db\Collection\Ab
         }
 
         if (isset($childs[$itemId])) {
-            foreach($childs[$itemId] as $i) {
+            foreach ($childs[$itemId] as $i) {
                 $this->_toTree($i->getId(), $childs, $tree);
             }
         }
     }
-
 }

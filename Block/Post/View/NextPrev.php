@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -79,14 +79,38 @@ class NextPrev extends \Magento\Framework\View\Element\Template
     {
         if ($this->_prevPost === null) {
             $this->_prevPost = false;
+            $currentPost = $this->getPost();
             $collection = $this->_getFrontendCollection()->addFieldToFilter(
-                'publish_time', [
-                    'gteq' => $this->getPost()->getPublishTime()
-                ])
-                ->setOrder('publish_time', 'ASC')
-                ->setPageSize(1);
+                'publish_time',
+                ['gteq' => $currentPost->getPublishTime()]
+            )->setOrder('publish_time', 'ASC');
 
             $post = $collection->getFirstItem();
+
+            if ($currentPost->getPublishTime() == $post->getPublishTime()) {
+
+                $collection = $this->_postCollectionFactory->create();
+                $collection->addActiveFilter()
+                    ->addStoreFilter($this->_storeManager->getStore()->getId())
+                    ->addFieldToFilter('publish_time', $currentPost->getPublishTime())
+                    ->setOrder('post_id', 'DESC');
+
+                if ($collection->getFirstItem()->getId() != $currentPost->getId()) {
+                    foreach ($collection as $item) {
+                        if ($item->getId() != $currentPost->getId()) {
+                            $post = $item;
+                        } else {
+                            break;
+                        }
+                    }
+                } else {
+                    $collection = $this->_getFrontendCollection()->addFieldToFilter(
+                        'publish_time',
+                        ['gt' => $this->getPost()->getPublishTime()]
+                    );
+                    $post = $collection->getFirstItem();
+                }
+            }
 
             if ($post->getId()) {
                 $this->_prevPost = $post;
@@ -104,22 +128,46 @@ class NextPrev extends \Magento\Framework\View\Element\Template
     {
         if ($this->_nextPost === null) {
             $this->_nextPost = false;
+            $currentPost = $this->getPost();
             $collection = $this->_getFrontendCollection()->addFieldToFilter(
-                'publish_time', [
-                    'lteq' => $this->getPost()->getPublishTime()
-                ])
-                ->setOrder('publish_time', 'DESC')
-                ->setPageSize(1);
+                'publish_time',
+                ['lteq' => $currentPost->getPublishTime()]
+            )->setOrder('publish_time', 'DESC');
 
             $post = $collection->getFirstItem();
+
+            if ($currentPost->getPublishTime() == $post->getPublishTime()) {
+
+                $collection = $this->_postCollectionFactory->create();
+                $collection->addActiveFilter()
+                    ->addStoreFilter($this->_storeManager->getStore()->getId())
+                    ->addFieldToFilter('publish_time', $currentPost->getPublishTime())
+                    ->setOrder('post_id', 'ASC');
+
+                if ($collection->getFirstItem()->getId() != $currentPost->getId()) {
+                    foreach ($collection as $item) {
+                        if ($item->getId() != $currentPost->getId()) {
+                            $post = $item;
+                        } else {
+                            break;
+                        }
+                    }
+                } else {
+                    $collection = $this->_getFrontendCollection()->addFieldToFilter(
+                        'publish_time',
+                        ['lt' => $this->getPost()->getPublishTime()]
+                    );
+                    $post = $collection->getFirstItem();
+                }
+            }
 
             if ($post->getId()) {
                 $this->_nextPost = $post;
             }
         }
-
         return $this->_nextPost;
     }
+
 
     /**
      * Retrieve post collection with frontend filters and order
@@ -131,7 +179,7 @@ class NextPrev extends \Magento\Framework\View\Element\Template
         $collection->addActiveFilter()
             ->addFieldToFilter('post_id', ['neq' => $this->getPost()->getId()])
             ->addStoreFilter($this->_storeManager->getStore()->getId())
-            ->setOrder('publish_time', 'DESC')
+            //->setOrder('publish_time', 'DESC')
             ->setPageSize(1);
         return $collection;
     }
@@ -145,5 +193,4 @@ class NextPrev extends \Magento\Framework\View\Element\Template
     {
         return $this->_coreRegistry->registry('current_blog_post');
     }
-
 }

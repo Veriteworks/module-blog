@@ -1,5 +1,10 @@
 <?php
-
+/**
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
+ *
+ * Glory to Ukraine! Glory to the heroes!
+ */
 namespace Magefan\Blog\Helper;
 
 use Magento\Framework\App\Area;
@@ -18,14 +23,55 @@ class Image extends AbstractHelper
      * @var int
      */
     protected $_quality = 100;
+    /**
+     * @var bool
+     */
     protected $_keepAspectRatio = true;
+    /**
+     * @var bool
+     */
     protected $_keepFrame = true;
+    /**
+     * @var bool
+     */
     protected $_keepTransparency = true;
+    /**
+     * @var bool
+     */
     protected $_constrainOnly = true;
+    /**
+     * @var array
+     */
     protected $_backgroundColor = [255, 255, 255];
+    /**
+     * @var
+     */
     protected $_baseFile;
+    /**
+     * @var
+     */
     protected $_newFile;
+    /**
+     * @var \Magento\Framework\Image\Factory
+     */
+    protected $_imageFactory;
+    /**
+     * @var \Magento\Framework\Filesystem\Directory\WriteInterface
+     */
+    protected $_mediaDirectory;
+    /**
+     * @var \Magento\Store\Model\StoreManagerInterface
+     */
+    protected $_storeManager;
 
+    /**
+     * Image constructor.
+     * @param \Magento\Framework\App\Helper\Context $context
+     * @param \Magento\Framework\Image\Factory $imageFactory
+     * @param \Magento\Framework\Filesystem $filesystem
+     * @param \Magento\Store\Model\StoreManagerInterface $storeManager
+     * @throws \Magento\Framework\Exception\FileSystemException
+     */
     public function __construct(
         \Magento\Framework\App\Helper\Context $context,
         \Magento\Framework\Image\Factory $imageFactory,
@@ -38,6 +84,10 @@ class Image extends AbstractHelper
         parent::__construct($context);
     }
 
+    /**
+     * @param $baseFile
+     * @return $this
+     */
     public function init($baseFile)
     {
         $this->_newFile = '';
@@ -45,18 +95,33 @@ class Image extends AbstractHelper
         return $this;
     }
 
+    /**
+     * @param $width
+     * @param null $height
+     * @return $this
+     */
     public function resize($width, $height = null)
     {
-        if ($this->_baseFile){
-            $path = 'blog/cache/' . $width . 'x' . $height;
-            $this->_newFile = $path. '/' . $this->_baseFile;
-            if (true || !$this->fileExists($this->_newFile)) {
-                $this->resizeBaseFile($width, $height);
+        if ($this->_baseFile) {
+            $pathinfo = pathinfo(($this->_baseFile));
+            if (isset($pathinfo) && $pathinfo['extension'] == 'webp') {
+                $this->_newFile = $this->_baseFile;
+            } else {
+                $path = 'blog/cache/' . $width . 'x' . $height;
+                $this->_newFile = $path . '/' . $this->_baseFile;
+                if (!$this->fileExists($this->_newFile)) {
+                    $this->resizeBaseFile($width, $height);
+                }
             }
         }
         return $this;
     }
 
+    /**
+     * @param $width
+     * @param $height
+     * @return $this
+     */
     protected function resizeBaseFile($width, $height)
     {
         if (!$this->fileExists($this->_baseFile)) {
@@ -82,18 +147,26 @@ class Image extends AbstractHelper
         return $this;
     }
 
+    /**
+     * @param $filename
+     * @return bool
+     */
     protected function fileExists($filename)
     {
         return $this->_mediaDirectory->isFile($filename);
     }
 
+    /**
+     * @return string
+     * @throws \Magento\Framework\Exception\NoSuchEntityException
+     */
     public function __toString()
     {
         $url = "";
-        if ($this->_baseFile){
+        if ($this->_baseFile) {
             $url = $this->_storeManager->getStore()->getBaseUrl(
-                    \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
-                ) . $this->_newFile;
+                \Magento\Framework\UrlInterface::URL_TYPE_MEDIA
+            ) . $this->_newFile;
         }
         return $url;
     }

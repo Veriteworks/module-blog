@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -14,7 +14,7 @@ use Magefan\Blog\Model\Config\Source\CommetType;
 /**
  * Blog post Magefan comments block
  */
-class Magefan extends \Magefan\Blog\Block\Post\View\Comments
+class Magefan extends \Magefan\Blog\Block\Post\View\Comments implements \Magento\Framework\DataObject\IdentityInterface
 {
     /**
      * @var string
@@ -29,7 +29,7 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
     /**
      * @var string
      */
-    protected $defaultCommentBlock = 'Magefan\Blog\Block\Post\View\Comments\Magefan\Comment';
+    protected $defaultCommentBlock = \Magefan\Blog\Block\Post\View\Comments\Magefan\Comment::class;
 
     /**
      * @var \Magento\Customer\Model\Session
@@ -70,7 +70,7 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
      */
     public function getCommentBlock()
     {
-    	$k = 'comment_block';
+        $k = 'comment_block';
         if (!$this->hasData($k)) {
             $blockName = $this->getCommentBlockName();
             if ($blockName) {
@@ -94,9 +94,9 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
      */
     public function getCommentHtml(\Magefan\Blog\Model\Comment $comment)
     {
-    	return $this->getCommentBlock()
-    		->setComment($comment)
-    		->toHtml();
+        return $this->getCommentBlock()
+            ->setComment($comment)
+            ->toHtml();
     }
 
     /**
@@ -108,9 +108,9 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
     {
 
         $this->commentCollection = $this->getPost()->getComments()
-    		->addActiveFilter()
+            ->addActiveFilter()
             ->addFieldToFilter('parent_id', 0)
-    		/*->setPageSize($this->getNumberOfComments())*/
+            /*->setPageSize($this->getNumberOfComments())*/
             ->setOrder('creation_time', 'DESC');
     }
 
@@ -154,7 +154,7 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
     public function canPost()
     {
         return $this->_scopeConfig->getValue(
-            \Magefan\Blog\Helper\Config::GUEST_COMMENT,
+            \Magefan\Blog\Model\Config::GUEST_COMMENT,
             ScopeInterface::SCOPE_STORE
         ) || $this->getCustomerSession()->getCustomerGroupId();
     }
@@ -167,7 +167,7 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
     public function getNumberOfComments()
     {
         return $this->_scopeConfig->getValue(
-            \Magefan\Blog\Helper\Config::NUMBER_OF_COMMENTS,
+            \Magefan\Blog\Model\Config::NUMBER_OF_COMMENTS,
             ScopeInterface::SCOPE_STORE
         );
     }
@@ -181,4 +181,18 @@ class Magefan extends \Magefan\Blog\Block\Post\View\Comments
         return $this->getUrl('blog/comment/post');
     }
 
+    /**
+     * Retrieve identities
+     *
+     * @return string
+     */
+    public function getIdentities()
+    {
+        $identities = [];
+        foreach ($this->getCommentsCollection() as $item) {
+            $identities = array_merge($identities, $item->getIdentities());
+        }
+
+        return array_unique($identities);
+    }
 }

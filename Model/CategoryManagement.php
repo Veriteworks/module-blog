@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -28,5 +28,50 @@ class CategoryManagement extends AbstractManagement
     ) {
         $this->_itemFactory = $categoryFactory;
     }
+    
+     /**
+      * Retrieve list of category by page type, term, store, etc
+      *
+      * @param  string $type
+      * @param  string $term
+      * @param  int $storeId
+      * @param  int $page
+      * @param  int $limit
+      * @return string
+      */
+    public function getList($type, $term, $storeId, $page, $limit)
+    {
+        try {
+            $collection = $this->_itemFactory->create()->getCollection();
+            $collection
+                ->addActiveFilter()
+                ->addStoreFilter($storeId)
+                ->setCurPage($page)
+                ->setPageSize($limit);
 
+            $type = strtolower($type);
+
+            switch ($type) {
+                case 'search':
+                    $collection->addSearchFilter($term);
+                    break;
+            }
+
+            $categories = [];
+            foreach ($collection as $item) {
+                $categories[] = $item->getDynamicData();
+            }
+
+            $result = [
+                'categories' => $categories,
+                'total_number' => $collection->getSize(),
+                'current_page' => $collection->getCurPage(),
+                'last_page' => $collection->getLastPageNumber(),
+            ];
+
+            return json_encode($result);
+        } catch (\Exception $e) {
+            return false;
+        }
+    }
 }

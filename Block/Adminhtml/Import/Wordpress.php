@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -33,9 +33,11 @@ class Wordpress extends \Magento\Backend\Block\Widget\Form\Container
         if (!$this->_isAllowedAction('Magefan_Blog::import')) {
             $this->buttonList->remove('save');
         } else {
-          $this->updateButton(
-              'save', 'label', __('Start Import')
-          );
+            $this->updateButton(
+                'save',
+                'label',
+                __('Start Import')
+            );
         }
 
         $this->buttonList->remove('delete');
@@ -62,5 +64,4 @@ class Wordpress extends \Magento\Backend\Block\Widget\Form\Container
     {
         return $this->getUrl('*/*/run', ['_current' => true]);
     }
-
 }

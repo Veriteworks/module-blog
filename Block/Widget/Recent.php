@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -56,7 +56,7 @@ class Recent extends \Magefan\Blog\Block\Post\PostList\AbstractList implements \
     public function _toHtml()
     {
         $this->setTemplate(
-            $this->getData('custom_template') ?: 'widget/recent.phtml'
+            $this->getData('custom_template') ?: 'Magefan_Blog::widget/recent.phtml'
         );
 
         return parent::_toHtml();
@@ -91,8 +91,27 @@ class Recent extends \Magefan\Blog\Block\Post\PostList\AbstractList implements \
 
         parent::_preparePostCollection();
 
+        $this->_postCollection->addRecentFilter();
         if ($category = $this->getCategory()) {
             $this->_postCollection->addCategoryFilter($category);
+        }
+
+        if ($tagId = $this->getData('tag_id')) {
+            $this->_postCollection->addTagFilter($tagId);
+        }
+
+        if ($authorId = $this->getData('author_id')) {
+            $this->_postCollection->addAuthorFilter($authorId);
+        }
+
+        if ($from = $this->getData('from')) {
+            $this->_postCollection
+                ->addFieldToFilter('publish_time', ['gteq' => $from . " 00:00:00"]);
+        }
+
+        if ($to = $this->getData('to')) {
+            $this->_postCollection
+                ->addFieldToFilter('publish_time', ['lteq' => $to . " 00:00:00"]);
         }
     }
 

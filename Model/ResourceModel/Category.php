@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -76,12 +76,12 @@ class Category extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
         }
 
         $identifierGenerator = \Magento\Framework\App\ObjectManager::getInstance()
-                ->create('Magefan\Blog\Model\ResourceModel\PageIdentifierGenerator');
+                ->create(\Magefan\Blog\Model\ResourceModel\PageIdentifierGenerator::class);
         $identifierGenerator->generate($object);
 
         if (!$this->isValidPageIdentifier($object)) {
             throw new \Magento\Framework\Exception\LocalizedException(
-                __('The category URL key contains capital letters or disallowed symbols.')
+                __('The category URL key contains disallowed symbols.')
             );
         }
 
@@ -104,7 +104,7 @@ class Category extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
     {
         $oldStoreIds = $this->lookupStoreIds($object->getId());
         $newStoreIds = (array)$object->getStoreIds();
-        if (!$newStoreIds) {
+        if (!$newStoreIds || in_array(0, $newStoreIds)) {
             $newStoreIds = [0];
         }
 
@@ -141,7 +141,7 @@ class Category extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
      */
     public function load(\Magento\Framework\Model\AbstractModel $object, $value, $field = null)
     {
-        if (!is_numeric($value) && is_null($field)) {
+        if (!is_numeric($value) && null === $field) {
             $field = 'identifier';
         }
 
@@ -210,7 +210,7 @@ class Category extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
      */
     protected function isValidPageIdentifier(\Magento\Framework\Model\AbstractModel $object)
     {
-        return preg_match('/^[a-z0-9][a-z0-9_\/-]+(\.[a-z0-9_-]+)?$/', $object->getData('identifier'));
+        return preg_match('/^([^?#<>@!&*()$%^\\+=,{}]+)?$/', $object->getData('identifier'));
     }
 
     /**
@@ -253,5 +253,4 @@ class Category extends \Magento\Framework\Model\ResourceModel\Db\AbstractDb
 
         return $adapter->fetchCol($select);
     }
-
 }

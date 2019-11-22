@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -17,7 +17,7 @@ abstract class AbstractManagement implements ManagementInterface
 {
     /**
      * @var Magento\Framework\Model\AbstractModel
-    */
+     */
     protected $_itemFactory;
 
     /**
@@ -115,17 +115,15 @@ abstract class AbstractManagement implements ManagementInterface
     {
         try {
             $item = $this->_itemFactory->create();
-            $item->load($id);
+            $item->getResource()->load($item, $id);
 
             if (!$item->isVisibleOnStore($storeId)) {
                 return false;
             }
-            $item->initDinamicData();
-            return json_encode($item->getData());
+
+            return json_encode($item->getDynamicData());
         } catch (\Exception $e) {
             return false;
         }
     }
-
-
 }

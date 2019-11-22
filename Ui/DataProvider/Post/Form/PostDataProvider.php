@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -84,6 +84,7 @@ class PostDataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
             /* Prepare Featured Image */
             $map = [
                 'featured_img' => 'getFeaturedImage',
+                'featured_list_img' => 'getFeaturedListImage',
                 'og_img' => 'getOgImage'
             ];
             foreach ($map as $key => $method) {
@@ -102,22 +103,35 @@ class PostDataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
             /* Prepare related posts */
             $collection = $post->getRelatedPosts();
             $items = [];
-            foreach($collection as $item) {
-                $items[] = [
-                    'id' => $item->getId(),
-                    'title' => $item->getTitle(),
-                ];
+            foreach ($collection as $item) {
+                    $itemData = $item->getData();
+                    $itemData['id'] = $item->getId();
+                    /* Fix for big request data array */
+                    foreach (['content', 'short_content', 'meta_description'] as $field) {
+                        if (isset($itemData[$field])) {
+                            unset($itemData[$field]);
+                        }
+                    }
+                    /* End */
+                    $items[] = $itemData;
             }
             $data['data']['links']['post'] = $items;
 
             /* Prepare related products */
             $collection = $post->getRelatedProducts()->addAttributeToSelect('name');
             $items = [];
-            foreach($collection as $item) {
-                $items[] = [
-                    'id' => $item->getId(),
-                    'name' => $item->getName(),
-                ];
+            foreach ($collection as $item) {
+                $itemData = $item->getData();
+                $itemData['id'] = $item->getId();
+                /* Fix for big request data array */
+                foreach (['description', 'short_description', 'meta_description'] as $field) {
+                    if (isset($itemData[$field])) {
+                        unset($itemData[$field]);
+                    }
+                }
+                /* End */
+
+                $items[] = $itemData;
             }
             $data['data']['links']['product'] = $items;
 

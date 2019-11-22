@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -27,11 +27,11 @@ class Author implements \Magento\Framework\Option\ArrayInterface
     /**
      * Initialize dependencies.
      *
-     * @param \Magento\User\Model\ResourceModel\User\CollectionFactory $authorCollectionFactory
+     * @param \Magefan\Blog\Api\AuthorCollectionInterfaceFactory $authorCollectionFactory
      * @param void
      */
     public function __construct(
-        \Magento\User\Model\ResourceModel\User\CollectionFactory $authorCollectionFactory
+        \Magefan\Blog\Api\AuthorCollectionInterfaceFactory  $authorCollectionFactory
     ) {
         $this->authorCollectionFactory = $authorCollectionFactory;
     }
@@ -71,6 +71,4 @@ class Author implements \Magento\Framework\Option\ArrayInterface
         }
         return $array;
     }
-
-
 }

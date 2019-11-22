@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -19,7 +19,7 @@ class PostList extends \Magefan\Blog\Block\Post\PostList\AbstractList
      * Block template file
      * @var string
      */
-    protected $_defaultToolbarBlock = 'Magefan\Blog\Block\Post\PostList\Toolbar';
+    protected $_defaultToolbarBlock = \Magefan\Blog\Block\Post\PostList\Toolbar::class;
 
     /**
      * Preparing global layout
@@ -147,5 +147,4 @@ class PostList extends \Magefan\Blog\Block\Post\PostList\AbstractList
 
         return false;
     }
-
 }

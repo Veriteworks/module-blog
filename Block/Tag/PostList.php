@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -48,16 +48,30 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
         if ($tag = $this->getTag()) {
             $this->_addBreadcrumbs($tag->getTitle(), 'blog_tag');
             $this->pageConfig->addBodyClass('blog-tag-' . $tag->getIdentifier());
-            $this->pageConfig->getTitle()->set($tag->getTitle());
-            $this->pageConfig->addRemotePageAsset(
-                $tag->getTagUrl(),
-                'canonical',
-                ['attributes' => ['rel' => 'canonical']]
-            );
-            $this->pageConfig->setRobots('NOINDEX,FOLLOW');
+            $this->pageConfig->getTitle()->set($tag->getMetaTitle());
+            $this->pageConfig->setKeywords($tag->getMetaKeywords());
+            $this->pageConfig->setDescription($tag->getMetaDescription());
+
+            $page = $this->_request->getParam(\Magefan\Blog\Block\Post\PostList\Toolbar::PAGE_PARM_NAME);
+            if ($page < 2) {
+                $robots = $tag->getData('meta_robots');
+                if ($robots) {
+                    $this->pageConfig->setRobots($robots);
+                } else {
+                    $robots = $this->config->getTagRobots();
+                    $this->pageConfig->setRobots($robots);
+                }
+            }
+
+            if ($this->config->getDisplayCanonicalTag(\Magefan\Blog\Model\Config::CANONICAL_PAGE_TYPE_TAG)) {
+                $this->pageConfig->addRemotePageAsset(
+                    $tag->getTagUrl(),
+                    'canonical',
+                    ['attributes' => ['rel' => 'canonical']]
+                );
+            }
         }
 
         return parent::_prepareLayout();
     }
-
 }

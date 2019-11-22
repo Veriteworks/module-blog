@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -29,7 +29,6 @@ class OgImg extends Action
      */
     protected function _isAllowed()
     {
-        return $this->_authorization->isAllowed('Magefan_Blog::post');
+        return $this->_authorization->isAllowed('Magefan_Blog::post_save');
     }
-
 }

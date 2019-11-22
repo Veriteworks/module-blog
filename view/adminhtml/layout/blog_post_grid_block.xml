@@ -1,8 +1,8 @@
 <?xml version="1.0"?>
 <!--
 /**
- * Copyright © 2015 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -24,11 +24,11 @@
                         <argument name="form_field_name" xsi:type="string">id</argument>
                         <argument name="use_select_all" xsi:type="string">1</argument>
                         <argument name="options" xsi:type="array">
-                            <item name="enable" xsi:type="array">
+                            <item name="status_enable" xsi:type="array">
                                 <item name="label" xsi:type="string" translate="true">Enable</item>
                                 <item name="url" xsi:type="string">*/*/massStatus/status/1/</item>
                             </item>
-                            <item name="disable" xsi:type="array">
+                            <item name="status_disable" xsi:type="array">
                                 <item name="label" xsi:type="string" translate="true">Disable</item>
                                 <item name="url" xsi:type="string">*/*/massStatus/status/0/</item>
                             </item>
@@ -86,6 +86,18 @@
                             <argument name="header_css_class" xsi:type="string">col-categories</argument>
                         </arguments>
                     </block>
+                    <block class="Magefan\Blog\Block\Adminhtml\Grid\Column\Author" as="author_id">
+                        <arguments>
+                            <argument name="header" xsi:type="string" translate="true">Author</argument>
+                            <argument name="index" xsi:type="string">author_id</argument>
+                            <argument name="type" xsi:type="string">author</argument>
+                            <argument name="store_all" xsi:type="string">1</argument>
+                            <argument name="store_view" xsi:type="string">1</argument>
+                            <argument name="sortable" xsi:type="string">1</argument>
+                            <argument name="column_css_class" xsi:type="string">col-author</argument>
+                            <argument name="header_css_class" xsi:type="string">col-author</argument>
+                        </arguments>
+                    </block>
                     <block class="Magento\Backend\Block\Widget\Grid\Column\Multistore" as="store_ids">
                         <arguments>
                             <argument name="header" xsi:type="string" translate="true">Store View</argument>
@@ -122,11 +134,11 @@
                             <argument name="index" xsi:type="string">is_active</argument>
                             <argument name="type" xsi:type="string">options</argument>
                             <argument name="options" xsi:type="array">
-                                <item name="status_subscribed" xsi:type="array">
+                                <item name="status_enabled" xsi:type="array">
                                     <item name="value" xsi:type="string">1</item>
                                     <item name="label" xsi:type="string" translate="true">Enabled</item>
                                 </item>
-                                <item name="status_not_active" xsi:type="array">
+                                <item name="status_disabled" xsi:type="array">
                                     <item name="value" xsi:type="string">0</item>
                                     <item name="label" xsi:type="string" translate="true">Disabled</item>
                                 </item>

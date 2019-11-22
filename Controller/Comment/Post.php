@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -129,7 +129,7 @@ class Post extends \Magefan\Blog\App\Action\Action
 
         try {
             $post = $this->initPost();
-            if (!$post)  {
+            if (!$post) {
                 throw new \Exception(__('You cannot post comment. Blog post is not longer exist.'), 1);
             }
 
@@ -178,7 +178,6 @@ class Post extends \Magefan\Blog\App\Action\Action
         if (!$post->getIsActive()) {
             return false;
         }
-
         return $post;
     }
 
@@ -198,5 +197,4 @@ class Post extends \Magefan\Blog\App\Action\Action
 
         return $comment;
     }
-
 }

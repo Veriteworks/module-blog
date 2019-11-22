@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -15,10 +15,10 @@ use Magento\Store\Model\ScopeInterface;
  */
 class PostList extends \Magefan\Blog\Block\Post\PostList
 {
-	/**
-	 * Retrieve query
-	 * @return string
-	 */
+    /**
+     * Retrieve query
+     * @return string
+     */
     public function getQuery()
     {
         return urldecode($this->getRequest()->getParam('q'));
@@ -35,6 +35,20 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
         $this->_postCollection->addSearchFilter(
             $this->getQuery()
         );
+        $this->_postCollection->setOrder(
+            self::POSTS_SORT_FIELD_BY_PUBLISH_TIME,
+            \Magento\Framework\Api\SortOrder::SORT_DESC
+        );
+    }
+
+    /**
+     * Retrieve collection order field
+     *
+     * @return string
+     */
+    public function getCollectionOrderField()
+    {
+        return 'search_rate';
     }
 
     /**
@@ -47,7 +61,12 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
         $title = $this->_getTitle();
         $this->_addBreadcrumbs($title, 'blog_search');
         $this->pageConfig->getTitle()->set($title);
-        $this->pageConfig->setRobots('NOINDEX,FOLLOW');
+
+        $page = $this->_request->getParam(\Magefan\Blog\Block\Post\PostList\Toolbar::PAGE_PARM_NAME);
+        if ($page < 2) {
+            $robots = $this->config->getSearchRobots();
+            $this->pageConfig->setRobots($robots);
+        }
 
         return parent::_prepareLayout();
     }
@@ -60,5 +79,4 @@ class PostList extends \Magefan\Blog\Block\Post\PostList
     {
         return __('Search "%1"', $this->getQuery());
     }
-
 }

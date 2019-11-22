@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
 
 namespace Magefan\Blog\Model\ResourceModel\Comment\Collection;
 
-use \Magefan\Blog\Model\ResourceModel\Comment\Collection;
+use Magefan\Blog\Model\ResourceModel\Comment\Collection;
 
 class Grid extends Collection
 {
@@ -105,13 +105,9 @@ class Grid extends Collection
                     $item->setStoreId($this->_storeId);
                 }
             }
-
         }
 
         $this->_previewFlag = false;
         return parent::_afterLoad();
     }
-
-
-
 }

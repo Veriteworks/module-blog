@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -81,12 +81,12 @@ class TagDataProvider extends \Magento\Ui\DataProvider\AbstractDataProvider
             $this->loadedData[$tag->getId()] = $tag->getData();
         }
 
-        $data = $this->dataPersistor->get('current_model');
+        $data = $this->dataPersistor->get('blog_tag_form_data');
         if (!empty($data)) {
             $tag = $this->collection->getNewEmptyItem();
             $tag->setData($data);
             $this->loadedData[$tag->getId()] = $tag->getData();
-            $this->dataPersistor->clear('current_model');
+            $this->dataPersistor->clear('blog_tag_form_data');
         }
 
         return $this->loadedData;

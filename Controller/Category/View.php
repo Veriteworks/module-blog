@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -47,10 +47,10 @@ class View extends \Magefan\Blog\App\Action\Action
             return $this->_forwardNoroute();
         }
 
-        $this->_objectManager->get('\Magento\Framework\Registry')
+        $this->_objectManager->get(\Magento\Framework\Registry::class)
             ->register('current_blog_category', $category);
 
-        $resultPage = $this->_objectManager->get('Magefan\Blog\Helper\Page')
+        $resultPage = $this->_objectManager->get(\Magefan\Blog\Helper\Page::class)
             ->prepareResultPage($this, $category);
         return $resultPage;
     }
@@ -65,7 +65,7 @@ class View extends \Magefan\Blog\App\Action\Action
         $id = $this->getRequest()->getParam('id');
         $storeId = $this->_storeManager->getStore()->getId();
 
-        $category = $this->_objectManager->create('Magefan\Blog\Model\Category')->load($id);
+        $category = $this->_objectManager->create(\Magefan\Blog\Model\Category::class)->load($id);
 
         if (!$category->isVisibleOnStore($storeId)) {
             return false;

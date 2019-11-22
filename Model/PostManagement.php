@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2016 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -37,7 +37,7 @@ class PostManagement extends AbstractManagement
      * @param  int $storeId
      * @param  int $page
      * @param  int $limit
-     * @return bool
+     * @return string
      */
     public function getList($type, $term, $storeId, $page, $limit)
     {
@@ -53,7 +53,7 @@ class PostManagement extends AbstractManagement
             $type = strtolower($type);
 
             switch ($type) {
-                case 'archive' :
+                case 'archive':
                     $term = explode('-', $term);
                     if (count($term) < 2) {
                         return false;
@@ -71,24 +71,23 @@ class PostManagement extends AbstractManagement
 
                     $collection->addArchiveFilter($year, $month);
                     break;
-                case 'author' :
+                case 'author':
                     $collection->addAuthorFilter($term);
                     break;
-                case 'category' :
+                case 'category':
                     $collection->addCategoryFilter($term);
                     break;
-                case 'search' :
+                case 'search':
                     $collection->addSearchFilter($term);
                     break;
-                case 'tag' :
+                case 'tag':
                     $collection->addTagFilter($term);
                     break;
             }
 
             $posts = [];
             foreach ($collection as $item) {
-                $item->initDinamicData();
-                $posts[] = $item->getData();
+                $posts[] = $item->getDynamicData();
             }
 
             $result = [
@@ -103,5 +102,4 @@ class PostManagement extends AbstractManagement
             return false;
         }
     }
-
 }

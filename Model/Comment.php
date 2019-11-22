@@ -1,14 +1,14 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
 
 namespace Magefan\Blog\Model;
 
-use \Magento\Framework\Model\AbstractModel;
+use Magento\Framework\Model\AbstractModel;
 
 /**
  * Comment model
@@ -38,10 +38,10 @@ use \Magento\Framework\Model\AbstractModel;
  * @method string getUpdateTime()
  * @method $this setUpdateTime(string $value)
  */
-class Comment extends AbstractModel
+class Comment extends AbstractModel implements \Magento\Framework\DataObject\IdentityInterface
 {
     /**
-     * @var \Magefan\Blog\Model\AuthorFactory
+     * @var PostFactory
      */
     protected $postFactory;
 
@@ -51,7 +51,7 @@ class Comment extends AbstractModel
     protected $customerFactory;
 
     /**
-     * @var \Magento\User\Model\UserFactory
+     * @var \Magefan\Blog\Api\AuthorInterfaceFactory
      */
     protected $userFactory;
 
@@ -71,12 +71,17 @@ class Comment extends AbstractModel
     protected $comments;
 
     /**
+     * blog cache comment
+     */
+    const CACHE_TAG = 'mfb_co';
+
+    /**
      * Initialize dependencies.
      * @param \Magento\Framework\Model\Context                             $context
      * @param \Magento\Framework\Registry                                  $registry
      * @param \Magefan\Blog\Model\PostFactory                              $postFactory
      * @param \Magento\Customer\Model\CustomerFactory                      $customerFactory,
-     * @param \Magento\User\Model\Useractory                               $userFactory,
+     * @param \Magefan\Blog\Api\AuthorInterfaceFactory                     $userFactory,
      * @param \Magefan\Blog\Model\ResourceModel\Comment\CollectionFactory  $commentCollectionFactory
      * @param \Magento\Framework\Model\ResourceModel\AbstractResource|null $resource
      * @param \Magento\Framework\Data\Collection\AbstractDb|null           $resourceCollection
@@ -87,7 +92,7 @@ class Comment extends AbstractModel
         \Magento\Framework\Registry $registry,
         \Magefan\Blog\Model\PostFactory $postFactory,
         \Magento\Customer\Model\CustomerFactory $customerFactory,
-        \Magento\User\Model\UserFactory $userFactory,
+        \Magefan\Blog\Api\AuthorInterfaceFactory $userFactory,
         \Magefan\Blog\Model\ResourceModel\Comment\CollectionFactory $commentCollectionFactory,
         \Magento\Framework\Model\ResourceModel\AbstractResource $resource = null,
         \Magento\Framework\Data\Collection\AbstractDb $resourceCollection = null,
@@ -102,13 +107,26 @@ class Comment extends AbstractModel
     }
 
     /**
+     * Retrieve identities
+     *
+     * @return array
+     */
+    public function getIdentities()
+    {
+        return [
+            self::CACHE_TAG . '_' . $this->getId(),
+            \Magefan\Blog\Model\Post::CACHE_TAG . '_' . $this->getPostId()
+        ];
+    }
+
+    /**
      * Initialize resource model
      *
      * @return void
      */
     protected function _construct()
     {
-        $this->_init('Magefan\Blog\Model\ResourceModel\Comment');
+        $this->_init(\Magefan\Blog\Model\ResourceModel\Comment::class);
     }
 
     /**
@@ -156,20 +174,19 @@ class Comment extends AbstractModel
     public function getAuthor()
     {
         if (null === $this->author) {
-
             $this->author = new \Magento\Framework\DataObject;
             $this->author->setType(
                 $this->getAuthorType()
             );
 
             switch ($this->getAuthorType()) {
-                case \Magefan\Blog\Model\Config\Source\AuthorType::GUEST :
+                case \Magefan\Blog\Model\Config\Source\AuthorType::GUEST:
                     $this->author->setData([
                         'nickname' => $this->getAuthorNickname(),
                         'email' => $this->getAuthorEmail(),
                     ]);
                     break;
-                case \Magefan\Blog\Model\Config\Source\AuthorType::CUSTOMER :
+                case \Magefan\Blog\Model\Config\Source\AuthorType::CUSTOMER:
                     $customer = $this->customerFactory->create();
                     $customer->load($this->getCustomerId());
                     $this->author->setData([
@@ -178,17 +195,16 @@ class Comment extends AbstractModel
                         'customer' => $customer,
                     ]);
                     break;
-                case \Magefan\Blog\Model\Config\Source\AuthorType::ADMIN :
+                case \Magefan\Blog\Model\Config\Source\AuthorType::ADMIN:
                     $admin = $this->userFactory->create();
                     $admin->load($this->getAdminId());
                     $this->author->setData([
-                        'nickname' => $customer->getName(),
+                        'nickname' => $admin->getName(),
                         'email' => $this->getEmail(),
                         'admin' => $admin,
                     ]);
                     break;
             }
-
         }
 
         return $this->author;
@@ -221,7 +237,7 @@ class Comment extends AbstractModel
      */
     public function getChildComments()
     {
-        if (is_null($this->comments)) {
+        if (null === $this->comments) {
             $this->comments = $this->commentCollectionFactory->create()
                 ->addFieldToFilter('parent_id', $this->getId());
         }
@@ -236,16 +252,6 @@ class Comment extends AbstractModel
     public function isReply()
     {
         return (bool)$this->getParentId();
-    }
-
-    /**
-     * Save the comment
-     * @return this
-     */
-    public function save()
-    {
-        $this->validate();
-        return parent::save();
     }
 
     /**

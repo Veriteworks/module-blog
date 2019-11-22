@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -71,8 +71,8 @@ class Toolbar extends \Magento\Framework\View\Element\Template
      */
     public function getLimit()
     {
-        return $this->_scopeConfig->getValue(
-            'mfblog/post_list/posts_per_page', 
+        return $this->getData('limit') ?: $this->_scopeConfig->getValue(
+            'mfblog/post_list/posts_per_page',
             \Magento\Store\Model\ScopeInterface::SCOPE_STORE
         );
     }
@@ -127,5 +127,4 @@ class Toolbar extends \Magento\Framework\View\Element\Template
 
         return '';
     }
-
 }

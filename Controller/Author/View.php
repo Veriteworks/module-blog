@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -35,22 +35,23 @@ class View extends \Magefan\Blog\App\Action\Action
             return $this->_forwardNoroute();
         }
 
-        $this->_objectManager->get('\Magento\Framework\Registry')->register('current_blog_author', $author);
+        $this->_objectManager->get(\Magento\Framework\Registry::class)->register('current_blog_author', $author);
 
-        $this->_view->loadLayout();
-        $this->_view->renderLayout();
+        $resultPage = $this->_objectManager->get(\Magefan\Blog\Helper\Page::class)
+            ->prepareResultPage($this, $author);
+        return $resultPage;
     }
 
     /**
      * Init author
      *
-     * @return \Magefan\Blog\Model\Author || false
+     * @return \Magefan\Blog\Api\AuthorInterface || false
      */
     protected function _initAuthor()
     {
         $id = $this->getRequest()->getParam('id');
 
-        $author = $this->_objectManager->create('Magefan\Blog\Model\Author')->load($id);
+        $author = $this->_objectManager->create(\Magefan\Blog\Api\AuthorInterface::class)->load($id);
 
         if (!$author->getId()) {
             return false;
@@ -58,5 +59,4 @@ class View extends \Magefan\Blog\App\Action\Action
 
         return $author;
     }
-
 }

@@ -32,21 +32,21 @@ The import process completed. %1 posts and %2 categories where imported. Some po
 Nothing to import.,Nada para importar.
 Can not make import.,Não foi possível importar.
 Something went wrong: ,Ocorreu um erro: 
-Blog Import from WordPress (beta),Importar Blog do Wordpress (Beta)
+Blog Import from WordPress,Importar Blog do Wordpress
 Please select,Selecione
 Use Facebook Comments,Usar Comentários do Facebook
 Use Disqus Comments,Usar Comentários do Disqus
-Use Google Comments (beta),Usar Comentários do Google (Beta)
+Use Google Comments,Usar Comentários do Google
 Yes (With auto trigger),Sim (Automaticamente)
 Yes (Without auto trigger),Yes (Manualmente)
 Parameter %1 is required,O parâmetro %1 é requerido
 AheadWorks Blog Extension not detected.,A extensão Blog da AheadWorks não foi detectada.
-The category URL key contains capital letters or disallowed symbols.,A URL key da categoria contém letras maiúsculas ou símbolos não permitidos.
+The category URL key contains disallowed symbols.,A URL key da categoria contém letras maiúsculas ou símbolos não permitidos.
 The category URL key cannot be made of only numbers.,A URL key da categoria não pode ser contituida apenas de números.
-The post URL key contains capital letters or disallowed symbols.,A URL key do post contém letras maiúsculas ou símbolos não permitidos.
+The post URL key contains disallowed symbols.,A URL key do post contém letras maiúsculas ou símbolos não permitidos.
 The post URL key cannot be made of only numbers.,A URL key do post não pode ser contituida apenas de números.
 The tag is already exist.,A tag já existe.
-The tag URL key contains capital letters or disallowed symbols.,A URL key da tag contém letras maiúsculas ou símbolos não permitidos.
+The tag URL key contains disallowed symbols.,A URL key da tag contém letras maiúsculas ou símbolos não permitidos.
 The tag URL key cannot be made of only numbers.,A URL key da tag não pode ser contituida apenas de números.
 Related posts,Posts relacionados
 Posted:,Publicado:
@@ -171,3 +171,14 @@ Oct,Out
 Nov,Nov
 Dec,Dez
 Read more >,Leia mais >
+"Import Categories","Import Categories"
+"Import Comments","Import Comments"
+"Import Posts","Import Posts"
+"Import from aheadWorks Blog Extension","Import from aheadWorks Blog Extension"
+"Import from Joomla","Import from Joomla"
+"Import from Blogger.com","Import from Blogger.com"
+"Import from Drupal","Import from Drupal"
+"Import from CSV","Import from CSV"
+"Import from XML","Import from XML"
+"Yes, I have read the %1 and agree to the processing of my personal data.","Yes, I have read the %1 and agree to the processing of my personal data."
+"privacy policy","privacy policy"

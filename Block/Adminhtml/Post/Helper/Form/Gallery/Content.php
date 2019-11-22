@@ -1,7 +1,7 @@
 <?php
 /**
- * Copyright © 2015-2017 Ihor Vansach (ihor@magefan.com). All rights reserved.
- * See LICENSE.txt for license details (http://opensource.org/licenses/osl-3.0.php).
+ * Copyright © Magefan (support@magefan.com). All rights reserved.
+ * Please visit Magefan.com for license details (https://magefan.com/end-user-license-agreement).
  *
  * Glory to Ukraine! Glory to the heroes!
  */
@@ -11,6 +11,7 @@
  */
 namespace Magefan\Blog\Block\Adminhtml\Post\Helper\Form\Gallery;
 
+use Magento\Framework\App\ObjectManager;
 use Magento\Backend\Block\Media\Uploader;
 use Magento\Framework\View\Element\AbstractBlock;
 
@@ -27,17 +28,39 @@ class Content extends \Magento\Backend\Block\Widget
     protected $_jsonEncoder;
 
     /**
+     * @var ImageUploadConfigDataProvider
+     */
+    private $imageUploadConfigDataProvider;
+
+    /**
+     * Content constructor.
      * @param \Magento\Backend\Block\Template\Context $context
      * @param \Magento\Framework\Json\EncoderInterface $jsonEncoder
      * @param array $data
+     * @param null $imageUploadConfigDataProvider
      */
     public function __construct(
         \Magento\Backend\Block\Template\Context $context,
         \Magento\Framework\Json\EncoderInterface $jsonEncoder,
-        array $data = []
+        array $data = [],
+        $imageUploadConfigDataProvider = null
     ) {
         $this->_jsonEncoder = $jsonEncoder;
         parent::__construct($context, $data);
+        try {
+            /* Try for old magento version where ImageUploadConfigDataProvider does not exist */
+            if (class_exists(\Magento\Backend\Block\DataProviders\ImageUploadConfig::class)) {
+                $this->imageUploadConfigDataProvider = $imageUploadConfigDataProvider
+                    ?: ObjectManager::getInstance()->get(\Magento\Backend\Block\DataProviders\ImageUploadConfig::class);
+            } elseif (class_exists(\Magento\Backend\Block\DataProviders\UploadConfig::class)) {
+                /* Workaround for Magento 2.2.8 */
+                $this->imageUploadConfigDataProvider = ObjectManager::getInstance()->get(
+                    \Magento\Backend\Block\DataProviders\UploadConfig::class
+                );
+            }
+        } catch (\Exception $e) {
+            return;
+        }
     }
 
     /**
@@ -45,7 +68,11 @@ class Content extends \Magento\Backend\Block\Widget
      */
     protected function _prepareLayout()
     {
-        $this->addChild('uploader', 'Magento\Backend\Block\Media\Uploader');
+        $this->addChild(
+            'uploader',
+            \Magento\Backend\Block\Media\Uploader::class,
+            ['image_upload_config_data' => $this->imageUploadConfigDataProvider]
+        );
 
         $this->getUploader()->getConfig()->setUrl(
             $this->_urlBuilder->addSessionParam()->getUrl('blog/post_upload/gallery')
